@@ -15,7 +15,8 @@ Dr. Allison Dickey, Research Bioinformtician
 **Prerequisites:**
 1. Basic understanding of molecular biology and genomics.
 2. Basic familiarity with the R programming language.
-3. Basic familiarity of github (downloading files etc.).
+3. Basic knowledge of using github (downloading files etc.).
+4. Basic familiarity of RMarkdown.
 <br/>  
 
 **Learning Materials**
