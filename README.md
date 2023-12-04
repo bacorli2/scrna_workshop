@@ -4,7 +4,7 @@
 
 **Instructors:**  
 Dr. Bruce Corliss, Research Bioinformtician  
-Dr. Allison Dickey, Computational Biologist  
+Dr. Allison Dickey, Research Bioinformtician  
 
 **Target Audience**: Biologists, bioinformaticians, and researchers interested in single-cell RNA sequencing data analysis. 
 <br/>  
