@@ -11,10 +11,12 @@ Dr. Allison Dickey, Computational Biologist
   
 **Format:** single day workshop, 8 hours run time, remote and on-site.
 <br/>  
-  
-_Required Materials:_
-Laptop with R, Rstudio, and Rtools installed.
-<br/>
+
+**Course Preparation**
+1. Software installation and setup (instructions found [here]).
+2. Download datasets (see datasets page).
+3. Test scripts to verify functionality (run scripts found M0 folder).
+<br/>  
   
 **Prerequisites:**
 1. Basic understanding of molecular biology and genomics.
@@ -31,11 +33,6 @@ Laptop with R, Rstudio, and Rtools installed.
 <br/>
   
 ## Course Outline:
-
-**Module 0:** Course Preparation
-1. Software installation and setup (instructions found [here]).
-2. Download datasets (see datasets page).
-3. Test scripts to verify functionality (run scripts found M0 folder).
   
 **Module 1:** Introduction to Single-Cell RNA Sequencing and Software Setup
 1. Overview of scRNA-seq technology and its applications
