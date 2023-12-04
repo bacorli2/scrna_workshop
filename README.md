@@ -20,14 +20,13 @@ Laptop with R, Rstudio, and Rtools installed.
 1. Basic understanding of molecular biology and genomics.
 2. Basic familiarity with the R programming language.
 3. Basic familiarity of github (downloading files etc.).
-4. Basic knowledge of molecular biology and genomics is recommended.
 <br/>  
 
 **Learning Materials**
-1. Powerpoint presentations
-2. R and Python scripts and code snippets
-3. Example datasets for hands-on analysis
-4. Recommended reading materials and online resources
+1. Powerpoint presentations.
+2. R and Python scripts and code snippets.
+3. Example datasets for hands-on analysis.
+4. Recommended reading materials and online resources.
 <br/>
 <br/>
   
@@ -45,38 +44,43 @@ Laptop with R, Rstudio, and Rtools installed.
 <br/>
 
 **Module 2:** Data Preprocessing and Quality Control using Cell Ranger
-1. Preprocessing steps using Cell Ranger
-2. Quality control metrics and filtering strategies
-3. Data exploration with Cell Ranger outputs
+1. Preprocessing steps using Cell Ranger.
+2. Quality control metrics and filtering strategies.
+3. Data exploration with Cell Ranger outputs.
 <br/>
 
-**Module 3:** Exploratory Data Analysis with Seurat (R)
-1. Introduction to Seurat: an R toolkit for single-cell genomics
-2. Dimensionality reduction techniques (PCA, t-SNE, UMAP)
-3. Visualization of scRNA-seq data using Seurat
+**Module 3:** Data processing using Seurat
+1. Introduction to Seurat: an R toolkit for single-cell genomics.
+2. Data normalization and structure of S4 class Seurat object.
+3. Horizontal and vertical integration of scRNA datasets.
+4. Linear and non-linear dimension reductions.
+<br/>  
+
+**Module 4:** Exploratory Data Analysis with Seurat (R)
+1. Dimensionality reduction techniques (PCA, t-SNE, UMAP).
+2. Visualization of scRNA-seq data using Seurat.
 <br/>
 
-**Module 4:** Cell Type Identification and Clustering with Seurat
-1. Clustering methods in Seurat for cell type identification
-2. Marker gene identification for characterizing cell types
-3. Integration of datasets and batch correction
+**Module 5:** Cell Type Identification and Clustering with Seurat
+1. Marker based cell identification using Seurat and SingleR.
+2. Atlast based cell identification.
 <br/>
 
-**Module 5:** Differential Expression Analysis with Seurat
-1. Statistical methods for identifying differentially expressed genes using Seurat
-2. Visualizing and interpreting differential expression results
-3. Accounting for batch effects in differential expression analysis
+**Module 6:** Differential Expression Analysis with Seurat
+1. Statistical methods for identifying differentially expressed genes using Seurat.
+2. Visualizing and interpreting differential expression results.
+3. Accounting for batch effects in differential expression analysis.
 <br/>
 
-**Module 6:** Best Practices and Troubleshooting
-1. Best practices for scRNA-seq analysis
-2. Troubleshooting and common challenges
-3. FAIR principles in data science research
+**Module 7:** Best Practices and Troubleshooting
+1. Best practices for scRNA-seq analysis.
+2. Troubleshooting and common challenges.
+3. FAIR principles in data science research.
 <br/>
 
-**Module 7:** Q&A and Wrap-Up
-1. Open discussion and Q&A session
-2. Summary of key concepts and take-home messages
+**Module 8:** Q&A and Wrap-Up
+1. Open discussion and Q&A session.
+2. Summary of key concepts and take-home messages.
 <br/>
 
 
