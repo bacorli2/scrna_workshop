@@ -12,19 +12,36 @@ Dr. Allison Dickey, Computational Biologist
 **Format:** single day workshop, 8 hours run time, remote and on-site.
 <br/>  
   
+_Required Materials:_
+Laptop with R, Rstudio, and Rtools installed.
+<br/>
+  
 **Prerequisites:**
 1. Basic understanding of molecular biology and genomics.
 2. Basic familiarity with the R programming language.
 3. Basic familiarity of github (downloading files etc.).
 4. Basic knowledge of molecular biology and genomics is recommended.
-<br/><br/>  
+<br/>  
 
+**Learning Materials**
+1. Powerpoint presentations
+2. R and Python scripts and code snippets
+3. Example datasets for hands-on analysis
+4. Recommended reading materials and online resources
+<br/>
+<br/>
+  
 ## Course Outline:
+
+**Module 0:** Course Preparation
+1. Software installation and setup (instructions found [here]).
+2. Download datasets (see datasets page).
+3. Test scripts to verify functionality (run scripts found M0 folder).
   
 **Module 1:** Introduction to Single-Cell RNA Sequencing and Software Setup
 1. Overview of scRNA-seq technology and its applications
-2. Introduction to software tools: Cell Ranger, Seurat, and Scanpy
-3. Installation and setup of necessary software packages
+2. Introduction to software tools: Cell Ranger, Seurat, SingleR, and Monocle
+
 <br/>
 
 **Module 2:** Data Preprocessing and Quality Control using Cell Ranger
@@ -51,52 +68,18 @@ Dr. Allison Dickey, Computational Biologist
 3. Accounting for batch effects in differential expression analysis
 <br/>
 
-**Module 6:** Data Preprocessing and Quality Control using Scanpy (Python)
-1. Introduction to Scanpy: an open-source Python toolkit for single-cell genomics
-2. Preprocessing steps using Scanpy
-3. Quality control metrics and filtering in Scanpy
-  <br/>
-
-**Module 7:** Exploratory Data Analysis with Scanpy
-1. Dimensionality reduction techniques in Scanpy (PCA, t-SNE, UMAP)
-2. Visualization of scRNA-seq data using Scanpy
-3. Comparison of results with Seurat
+**Module 6:** Best Practices and Troubleshooting
+1. Best practices for scRNA-seq analysis
+2. Troubleshooting and common challenges
+3. FAIR principles in data science research
 <br/>
 
-**Module 8:** Cell Type Identification and Clustering with Scanpy
-1. Clustering methods in Scanpy for cell type identification
-2. Marker gene identification for characterizing cell types
-3. Integration of datasets and batch correction in Scanpy
-<br/>
-
-**Module 9:** Differential Expression Analysis with Scanpy
-1. Statistical methods for identifying differentially expressed genes using Scanpy
-2. Visualizing and interpreting differential expression results
-3. Comparison of results with Seurat
-<br/>
-
-**Module 10:** Comparative Analysis and Best Practices
-1. Comparison of results between Cell Ranger, Seurat, and Scanpy
-2. Best practices for scRNA-seq analysis
-3. Troubleshooting and common challenges
-<br/>
-
-**Module 11:** Q&A and Wrap-Up
+**Module 7:** Q&A and Wrap-Up
 1. Open discussion and Q&A session
 2. Summary of key concepts and take-home messages
-3. Distribution of course materials and resources
 <br/>
 
-_Required Materials:_
-Laptop with R, Rstudio, and Rtools installed.
-<br/>
 
-**Learning Materials**
-1. Powerpoint presentations
-2. R and Python scripts and code snippets
-3. Example datasets for hands-on analysis
-4. Recommended reading materials and online resources
-<br/>
 
 _Evaluation:_ Participants will be evaluated based on their engagement in the hands-on sessions, participation in discussions, and completion of assigned exercises.
 <br/>
