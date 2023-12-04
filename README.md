@@ -72,7 +72,7 @@ Dr. Allison Dickey, Research Bioinformtician
 **Module 7:** Best Practices and Troubleshooting
 1. Best practices for scRNA-seq analysis.
 2. Troubleshooting and common challenges.
-3. FAIR principles in data science research.
+3. Recommendation for reproducible and accessible data analysis pipelines.
 <br/>
 
 **Module 8:** Q&A and Wrap-Up
