@@ -11,12 +11,6 @@ Dr. Allison Dickey, Computational Biologist
   
 **Format:** single day workshop, 8 hours run time, remote and on-site.
 <br/>  
-
-**Course Preparation**
-1. Software installation and setup (instructions found [here]).
-2. Download datasets (see datasets page).
-3. Test scripts to verify functionality (run scripts found M0 folder).
-<br/>  
   
 **Prerequisites:**
 1. Basic understanding of molecular biology and genomics.
@@ -34,11 +28,16 @@ Dr. Allison Dickey, Computational Biologist
   
 ## Course Outline:
   
+**Module 0: Course Preparation**
+1. Software installation and setup (instructions found [here]).
+2. Download datasets (see datasets page).
+3. Test scripts to verify functionality (run scripts found M0 folder).
+<br/>  
+
 **Module 1:** Introduction to Single-Cell RNA Sequencing and Software Setup
 1. Overview of scRNA-seq technology and its applications
 2. Introduction to software tools: Cell Ranger, Seurat, SingleR, and Monocle
-
-<br/>
+<br/>  
 
 **Module 2:** Data Preprocessing and Quality Control using Cell Ranger
 1. Preprocessing steps using Cell Ranger.
