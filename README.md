@@ -29,11 +29,14 @@ Dr. Allison Dickey, Research Bioinformtician
   
 ## Course Outline:
   
-**Module 0: Course Preparation**
-1. Software installation and setup (instructions found [here]).
-2. Download datasets (see datasets page).
-3. Test scripts to verify functionality (run scripts found M0 folder).
-<br/>  
+**Module 0: Course Preparation and Introduction**
+1. Preparation
+  a. Software installation and setup (instructions found [here]).
+  b. Download datasets (see datasets page).
+  c. Test scripts to verify functionality (run scripts found M0 folder).
+2. Instructor Introductions
+3. Summary of Syllabus and Learning Objectives
+5. br/>  
 
 **Module 1:** Introduction to Single-Cell RNA Sequencing and Software Setup
 1. Overview of scRNA-seq technology and its applications
