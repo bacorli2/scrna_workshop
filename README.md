@@ -16,7 +16,7 @@ Dr. Allison Dickey, Research Bioinformtician
 1. Basic understanding of molecular biology and genomics.
 2. Basic familiarity with the R programming language.
 3. Basic knowledge of using github (downloading files etc.).
-4. Basic familiarity of RMarkdown.
+4. Basic familiarity of RMarkdown.  
 <br/>  
 
 **Learning Materials**
@@ -30,13 +30,13 @@ Dr. Allison Dickey, Research Bioinformtician
 ## Course Outline:
   
 **Module 0: Course Preparation and Introduction**
-1. Preparation
-  a. Software installation and setup (instructions found [here]).
-  b. Download datasets (see datasets page).
-  c. Test scripts to verify functionality (run scripts found M0 folder).
-2. Instructor Introductions
-3. Summary of Syllabus and Learning Objectives
-5. br/>  
+1. Preparation  
+  a. Software installation and setup (instructions found [here]).  
+  b. Download datasets (see datasets page).  
+  c. Test scripts to verify functionality (run scripts found M0 folder).  
+2. Instructor Introductions  
+3. Summary of Syllabus and Learning Objectives    
+<br/>    
 
 **Module 1:** Introduction to Single-Cell RNA Sequencing and Software Setup
 1. Overview of scRNA-seq technology and its applications
