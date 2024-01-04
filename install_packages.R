@@ -7,7 +7,7 @@ base_installs <- install.packages(setdiff(base_packages, rownames(installed.pack
 # Load all base packages
 base_loads <- lapply(base_packages, library, character.only = TRUE)
 # Bioconductor Packages
-biocm_packages <-  c("BiocParallel", "Seurat")
+biocm_packages <-  c("BiocParallel", "Seurat", "SeuratWrappers","monocle")
 bioc_installs <- setdiff(biocm_packages, rownames(installed.packages()))
 if (length(bioc_installs)) {BiocManager::install(bioc_installs) }
 # Load all Bioconductor packages
