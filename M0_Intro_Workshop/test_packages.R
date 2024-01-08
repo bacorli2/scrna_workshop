@@ -38,6 +38,9 @@ pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3
 # Add column in metadata slot for percent of mitochondrial genes (QC metric)
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
 
+# Visualize QC metrics as a violin plot
+# VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
 # nFeature_RNA > 200: removes empty droplets or poor quality cells with little DNA
 # nFeature_RNA <25000: remove doublets (droplets with 2+ cells)
 pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
@@ -101,11 +104,17 @@ pbmc <- RunUMAP(pbmc, dims = 1:10)
 # Visualize UMAP clusters
 DimPlot(pbmc, reduction = "umap")
 
-
-# Cell Type Identification
+# Cluster Marker Identification
 #-------------------------------------------------------------------------------
+# Note: Install presto package for faster results
+# Findconservedmarkers()
+pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE)
 
-# SciType Cell Type Identification
+
+
+
+# Scitype Cell Type Identification
+#-------------------------------------------------------------------------------
 #https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
 # load gene set and cell type annotation functions
 source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
