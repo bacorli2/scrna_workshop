@@ -82,6 +82,7 @@ pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
 # Maximize the signal (biological variability) to the noise (other sources of variation)
 ElbowPlot(pbmc)
 
+
 # Clustering
 #-------------------------------------------------------------------------------
 # Construct a kNN graph based on euclidean distance in a subset of PCA space 
@@ -104,8 +105,12 @@ pbmc <- RunUMAP(pbmc, dims = 1:10)
 # Visualize UMAP clusters
 DimPlot(pbmc, reduction = "umap")
 
+
+
+
 # Cluster Marker Identification
 #-------------------------------------------------------------------------------
+
 # Note: Install presto package for faster results
 # Findconservedmarkers()
 pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE)
@@ -115,6 +120,7 @@ pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE)
 
 # Scitype Cell Type Identification
 #-------------------------------------------------------------------------------
+
 #https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
 # load gene set and cell type annotation functions
 source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
