@@ -1,5 +1,5 @@
 
-
+#Set sra_id and transcriptome ref path variables
 sra_id="SRR23691690"
 transcriptome_ref_path="/home/bacorliss/research/zebra_scrna/ref/lawson/Danio-rerio-genome-lawson"
 
@@ -42,7 +42,7 @@ if ! test -f ./${sra_id}_status/1_prefectch_complete; then
     rm -r ./${sra_id}
   fi
 
-  # download SRA data
+  # Download SRA data
   prefetch -v ${sra_id} --max-size 500000000
   
   touch ./${sra_id}_status/1_prefectch_complete
@@ -56,6 +56,7 @@ if ! test -f ./${sra_id}_status/2_fastq-dump_complete; then
     rm -f ./${sra_id}_{1,4}.fastq
   fi
   
+  # Seperate read files
   fasterq-dump ./${sra_id} --split-files --include-technical
   
   touch ./${sra_id}_status/2_fastq-dump_complete
