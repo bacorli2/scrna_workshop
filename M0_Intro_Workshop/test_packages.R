@@ -10,13 +10,13 @@ library(openxlsx)
 library(ggplot2)
 
 # This code was appropriate from the following sources
-# https://satijalab.org/seurat/articles/pbmc3k_tutorial
+# https://satijalab.org/seurat/articles/srat3k_tutorial
 
 # Set wd to base of workshop repository
 here::i_am("README.md")
 
 # Example small dataset (real data)
-# Used from this tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial
+# Used from this tutorial: https://satijalab.org/seurat/articles/srat3k_tutorial
 # 2,700 single cells that were sequenced on the Illumina NextSeq 500
 # 13,714 genes
 # Download dataset into temp_data, unzip
@@ -27,60 +27,70 @@ if (!file.exists(here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.
   untar(here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz"), 
         exdir = here::here("_temp_data"))
 }
-# Load the PBMC dataset
-pbmc.data <- Read10X(data.dir = here("_temp_data", "filtered_gene_bc_matrices/hg19"))
+# Load the srat dataset
+srat.data <- Read10X(data.dir = here("_temp_data", "filtered_gene_bc_matrices/hg19"))
 
 # Initialize the Seurat object with the raw count matrix (non-normalized data).
-# Threshold genes that are found within at least 3 cells
-# Threshold cells that have at least 200 genes
-pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
+# Include genes that are found within at least 3 cells
+# Include cells that have at least 200 genes
+srat <- CreateSeuratObject(counts = srat.data, project = "pbmc3k", 
+                           min.cells = 3, min.features = 200)
 
 # Add column in metadata slot for percent of mitochondrial genes (QC metric)
-pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+srat[["percent.mt"]] <- PercentageFeatureSet(srat, pattern = "^MT-")
 
 # Visualize QC metrics as a violin plot
-# VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
+        ncol = 3)
 
-# nFeature_RNA > 200: removes empty droplets or poor quality cells with little DNA
+# Filter poor quality cells
+# nFeature_RNA > 200: removes empty droplets or cells with little DNA
 # nFeature_RNA <25000: remove doublets (droplets with 2+ cells)
-pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+# percent.mt < 5: removes cells with over 5% mitochondrial DNA 
+# (cells with poor viability)
+srat <- subset(srat, subset = nFeature_RNA > 200 & 
+                 nFeature_RNA < 2500 & 
+                 percent.mt < 5)
 
 # Normalize data
 # 1. Normalizes gene expression by the total expression in each cell
 # 2. Multiplies this by a scale factor (10,000 by default)
 # 3. Log-transforms the result.
-# Stored in: pbmc[["RNA"]]$data
-pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
+# Stored in: srat[["RNA"]]$data
+srat <- NormalizeData(srat, normalization.method = "LogNormalize", 
+                      scale.factor = 10000)
 
 # Feature Selection
-# Identify highly variables genes, use these as anchors for downstream dimension
-# reduction
-pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+# Identify highly variables genes, (to be used for dimension reduction)
+srat <- FindVariableFeatures(srat, selection.method = "vst", nfeatures = 2000)
 
 # Scale the data (across cells, only selected variable features)
-# Essentially converts gene expression to z-score (normalize by mean and std across cells)
-# Stored in: pbmc[["RNA"]]$scale.data
-pbmc <- ScaleData(pbmc, features = rownames(pbmc))
+# Essentially converts gene expression to z-score (normalize by mean and std 
+# across cells)
+# Stored in: srat[["RNA"]]$scale.data
+srat <- ScaleData(srat, features = rownames(srat))
 
 # Scale data can also be used to remove unwanted cell cycle variation
 # However, this is a more advance method, and it is recommended to use the new
 # Seurat workflow: SCTransform(). 
-# Paper: https://genomebiology.biomedcentral.com/articles/10.1186/s13059-021-02584-9
+# Paper: https://genomebiology.biomedcentral.com/articles/10.1186/
+#        s13059-021-02584-9
 # Vignette: https://satijalab.org/seurat/articles/sctransform_vignette
-# pbmc <- ScaleData(pbmc, vars.to.regress = "percent.mt")
+# srat <- ScaleData(srat, vars.to.regress = "percent.mt")
 
 
 # Linear dimension reduction (PCA)
 #-------------------------------------------------------------------------------
-pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+srat <- RunPCA(srat, features = VariableFeatures(object = srat))
 # Plot commands: VizDimReduction(), DimPlot(), and DimHeatmap()
-# VizDimLoadings(pbmc, dims = 1:2, reduction = "pca").     ** most useful**
-# DimHeatmap(pbmc, dims = 1, cells = 500, balanced = TRUE)
-# DimPlot(pbmc, reduction = "pca") + NoLegend()
+VizDimLoadings(srat, dims = 1:2, reduction = "pca").     #** most useful**
+DimHeatmap(srat, dims = 1, cells = 500, balanced = TRUE)
+DimPlot(srat, reduction = "pca") + NoLegend()
 
 # Choose dimensionality of the dataset
-# Maximize the signal (biological variability) to the noise (other sources of variation)
-ElbowPlot(pbmc)
+# Maximize the signal (biological variability) to the noise (other sources of 
+# variation)
+ElbowPlot(srat)
 
 
 # Clustering
@@ -89,21 +99,21 @@ ElbowPlot(pbmc)
 #  (up to dimensionality chosen).
 # Refine edge weights between pairs of cells based on their shared overlap and 
 # local neighboors (Jaccard similarity)
-pbmc <- FindNeighbors(pbmc, dims = 1:10)
+srat <- FindNeighbors(srat, dims = 1:10)
 
-# To cluster the cells, we next apply modularity optimization (Louvain algorithm, SLM )
-#  to iteratively group cells together, with the goal of optimizing the standard 
-#  modularity function. 
-# Cluster granularity is set with resolution, 0.4-1.2 typically returns good results
-#   for single-cell datasets of around 3K cells. 
-#   resolution often increases for larger datasets.
-pbmc <- FindClusters(pbmc, resolution = 0.5)
+# Clustering Cells: we next apply modularity optimization 
+# (Louvain algorithm, SLM ) to iteratively group cells together, with the goal 
+# of optimizing the standard modularity function. 
+# Cluster granularity is set with resolution, 0.4-1.2 typically returns good 
+# results for single-cell datasets of around 3K cells. Resolution often 
+# increases for larger datasets.
+srat <- FindClusters(srat, resolution = 0.5)
 
 # Perform UMAP clustering
-pbmc <- RunUMAP(pbmc, dims = 1:10)
+srat <- RunUMAP(srat, dims = 1:10)
 
 # Visualize UMAP clusters
-DimPlot(pbmc, reduction = "umap")
+DimPlot(srat, reduction = "umap")
 
 
 
@@ -113,7 +123,7 @@ DimPlot(pbmc, reduction = "umap")
 
 # Note: Install presto package for faster results
 # Findconservedmarkers()
-pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE)
+srat.markers <- FindAllMarkers(srat, only.pos = TRUE)
 
 
 
@@ -136,19 +146,20 @@ tissue = "Immune system"
 gs_list = gene_sets_prepare(db_, tissue)
 
 # get cell-type by cell matrix
-es.max = sctype_score(scRNAseqData = pbmc[["RNA"]]$scale.data, scaled = TRUE, 
+es.max = sctype_score(scRNAseqData = srat[["RNA"]]$scale.data, scaled = TRUE, 
                       gs = gs_list$gs_positive, gs2 = gs_list$gs_negative) 
 
 # NOTE: scRNAseqData parameter should correspond to your input scRNA-seq matrix. 
 # In case Seurat is used, it is either 
-# 1. pbmc[["RNA"]]@scale.data (default), 
-# 2. pbmc[["SCT"]]@scale.data, if sctransform is used for normalization,
-# 3. pbmc[["integrated"]]@scale.data, for joint analysis of multiple sc datasets.
+# 1. srat[["RNA"]]@scale.data (default), 
+# 2. srat[["SCT"]]@scale.data, if sctransform is used for normalization,
+# 3. srat[["integrated"]]@scale.data, for joint analysis of multiple sc datasets.
 
 # Merge by cluster
-cL_resutls = do.call("rbind", lapply(unique(pbmc@meta.data$seurat_clusters), function(cl){
-  es.max.cl = sort(rowSums(es.max[ ,rownames(pbmc@meta.data[pbmc@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
-  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(pbmc@meta.data$seurat_clusters==cl)), 10)
+cL_resutls = do.call("rbind", lapply(unique(srat@meta.data$seurat_clusters), 
+                                     function(cl){
+  es.max.cl = sort(rowSums(es.max[ ,rownames(srat@meta.data[srat@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
+  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(srat@meta.data$seurat_clusters==cl)), 10)
 }))
 sctype_scores = cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)  
 
@@ -157,12 +168,12 @@ sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < sctype_score
 print(sctype_scores[,1:3])
 
 # Add another column in seurat metadata for celltype
-pbmc@meta.data$cell_type_scitype <- select(pbmc@meta.data, "seurat_clusters") %>%
+srat@meta.data$cell_type_scitype <- select(srat@meta.data, "seurat_clusters") %>%
   left_join(y = select(sctype_scores, "cluster", "type"), 
             by = join_by(seurat_clusters == cluster)) %>% pull("type")
 
 # UMAP Plot of Scitype annotated cells
-DimPlot(pbmc, reduction = "umap", label = FALSE, repel = TRUE, 
+DimPlot(srat, reduction = "umap", label = FALSE, repel = TRUE, 
         group.by = 'cell_type_scitype') + 
   ggtitle("SciType Annotated Cells")      
 
