@@ -10,13 +10,13 @@ library(openxlsx)
 library(ggplot2)
 
 # This code was appropriate from the following sources
-# https://satijalab.org/seurat/articles/srat3k_tutorial
+# https://satijalab.org/seurat/articles/pbmc3k_tutorial
 
 # Set wd to base of workshop repository
 here::i_am("README.md")
 
 # Example small dataset (real data)
-# Used from this tutorial: https://satijalab.org/seurat/articles/srat3k_tutorial
+# Used from this tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial
 # 2,700 single cells that were sequenced on the Illumina NextSeq 500
 # 13,714 genes
 # Download dataset into temp_data, unzip
@@ -108,6 +108,8 @@ srat <- FindNeighbors(srat, dims = 1:10)
 # results for single-cell datasets of around 3K cells. Resolution often 
 # increases for larger datasets.
 srat <- FindClusters(srat, resolution = 0.5)
+DimPlot(srat, reduction = "pca") + NoLegend()
+
 
 # Perform UMAP clustering
 srat <- RunUMAP(srat, dims = 1:10)
