@@ -7,6 +7,7 @@ library(patchwork)
 library(here)
 library(HGNChelper)
 library(openxlsx)
+library(presto)
 library(ggplot2)
 
 # This code was appropriate from the following sources
@@ -40,14 +41,17 @@ srat <- CreateSeuratObject(counts = srat.data, project = "pbmc3k",
 srat[["percent.mt"]] <- PercentageFeatureSet(srat, pattern = "^MT-")
 
 # Visualize QC metrics as a violin plot
+# nFeature_RNA: total number of genes detected in each cell
+# nCount_RNA: total number of molecules detected within a cell (library size)
+# percent.mt: fraction of genes that are mitochondrial (qc metric)
 VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
         ncol = 3)
 
 # Filter poor quality cells
-# nFeature_RNA > 200: removes empty droplets or cells with little DNA
-# nFeature_RNA <25000: remove doublets (droplets with 2+ cells)
+# nFeature_RNA > 200: removes empty droplets or cells with little RNA
+# nFeature_RNA < 25000: remove doublets (droplets with 2+ cells)
 # percent.mt < 5: removes cells with over 5% mitochondrial DNA 
-# (cells with poor viability)
+# (poor viability)
 srat <- subset(srat, subset = nFeature_RNA > 200 & 
                  nFeature_RNA < 2500 & 
                  percent.mt < 5)
@@ -83,7 +87,7 @@ srat <- ScaleData(srat, features = rownames(srat))
 #-------------------------------------------------------------------------------
 srat <- RunPCA(srat, features = VariableFeatures(object = srat))
 # Plot commands: VizDimReduction(), DimPlot(), and DimHeatmap()
-VizDimLoadings(srat, dims = 1:2, reduction = "pca").     #** most useful**
+VizDimLoadings(srat, dims = 1:2, reduction = "pca")     
 DimHeatmap(srat, dims = 1, cells = 500, balanced = TRUE)
 DimPlot(srat, reduction = "pca") + NoLegend()
 
@@ -112,7 +116,7 @@ DimPlot(srat, reduction = "pca") + NoLegend()
 
 
 # Perform UMAP clustering
-srat <- RunUMAP(srat, dims = 1:10)
+srat <- RunUMAP(srat)
 
 # Visualize UMAP clusters
 DimPlot(srat, reduction = "umap")

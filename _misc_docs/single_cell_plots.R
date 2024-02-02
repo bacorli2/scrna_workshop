@@ -6,10 +6,49 @@ library(cowplot)
 # library(dplyr)
 
 
+# Set wd to base of workshop repository
+here::i_am("README.md")
 
-# Normalization Example
+# Normalization Data Example
 #-------------------------------------------------------------------------------
+cdata <- 
+  rbind(tibble(Cell = "Cell 1", x = 1:15, y = runif(15, min = 0, max = 30)),
+        tibble(Cell = "Cell 2", x = 1:15, y = runif(15, min = 0, max = 30)),
+        tibble(Cell = "Cell 3", x = 1:15, y = runif(15, min = 0, max = 30)),
+        tibble(Cell = "Cell 4", x = 1:15, y = runif(15, min = 0, max = 30)),
+        tibble(Cell = "Cell 5", x = 1:15, y = runif(15, min = 0, max = 30)),
+        tibble(Cell = "Cell 6", x = 1:15, y = runif(15, min = 0, max = 30)))
 
+cdata$Cell = factor(cdata$Cell)
+cdata <- cdata %>% group_by(Cell) %>% mutate(z = log1p(10000 * y / (sum(y)*10000)))
+
+
+gg <- ggplot(data = cdata, aes(x=x, y= y, fill = Cell) ) +
+  facet_grid(cols = vars(Cell)) +
+  geom_bar(stat = "identity") + 
+  theme_classic(base_size = 8) +
+  xlab("Gene Count") + ylab("Gene") +
+  coord_flip() +
+  theme(legend.position = "none") + 
+  scale_y_continuous(n.breaks = 3)
+gg
+save_plot(here::here("temp_out","cell_raw_count.png"), plot = gg, base_height = 2, base_width = 7)
+
+gg <- ggplot(data = cdata, aes(x=x, y= z, fill = Cell) ) +
+  facet_grid(cols = vars(Cell)) +
+  geom_bar(stat = "identity") + 
+  theme_classic(base_size = 8) +
+  xlab("Norm. Gene Expression") + ylab("Gene") +
+  coord_flip() +
+  theme(legend.position = "none") + 
+  scale_y_continuous(n.breaks = 3)
+gg
+save_plot(here::here("temp_out","cell_norm_count.png"), plot = gg, base_height = 2, base_width = 7)
+
+
+
+# Scaling Data Example
+#-------------------------------------------------------------------------------
 cdata <- 
   rbind(tibble(Cell = "Cell 1", x = 1:15, y = c(.8, .3, .1, .5, .1, .3, .1, 1., .4, .4, .8, .5, .4, .2, .4)),
         tibble(Cell = "Cell 2", x = 1:15, y = c(.9, .2, .9, .4, .9, .2, .2, .9, .3, .3, .9, .6, .2, .3, .1)),
@@ -19,7 +58,7 @@ cdata <-
         tibble(Cell = "Cell 6", x = 1:15, y = c(.6, .5, .3, .2, .8, .8, .2, .8, .6, .1, .7, .7, .5, .3, .4)))
 
 cdata$Cell = factor(cdata$Cell)
-cdata %>% group_by(Cell) %>% mutate(z = as.numeric(scale(y)))
+cdata <- cdata %>% group_by(Cell) %>% mutate(z = as.numeric(scale(y)))
 
 
 gg <- ggplot(data = cdata, aes(x=x, y= y, fill = Cell) ) +
@@ -31,18 +70,15 @@ gg <- ggplot(data = cdata, aes(x=x, y= y, fill = Cell) ) +
   theme(legend.position = "none") + 
   scale_y_continuous(n.breaks = 3)
 gg
-save_plot("cell_raw.png", plot = gg, base_height = 2, base_width = 7)
+save_plot(here::here("temp_out","cell_raw_scale.png"), plot = gg, base_height = 2, base_width = 7)
 
-gg <- ggplot(data = cdata, aes(x=x, y= z, fill = Cell) ) +
+gg <- ggplot(data = cdata, aes(x=x, y = z, fill = Cell) ) +
   facet_grid(cols = vars(Cell)) +
   geom_bar(stat = "identity") + 
   theme_classic(base_size = 8) +
-  xlab("Norm. Gene Expression") + ylab("Gene") +
+  xlab("Scaled. Gene Expression") + ylab("Gene") +
   coord_flip() +
   theme(legend.position = "none") + 
   scale_y_continuous(n.breaks = 3)
 gg
-save_plot("cell_z.png", plot = gg, base_height = 2, base_width = 7)
-
-
-# COnvert to 
+save_plot(here::here("temp_out","cell_scaled_scaled.png"), plot = gg, base_height = 2, base_width = 7)
