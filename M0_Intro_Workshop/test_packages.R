@@ -52,8 +52,7 @@ VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
 # nFeature_RNA < 25000: remove doublets (droplets with 2+ cells)
 # percent.mt < 5: removes cells with over 5% mitochondrial DNA 
 # (poor viability)
-srat <- subset(srat, subset = nFeature_RNA > 200 & 
-                 nFeature_RNA < 2500 & 
+srat <- subset(srat, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & 
                  percent.mt < 5)
 
 # Normalize data
@@ -116,10 +115,10 @@ DimPlot(srat, reduction = "pca") + NoLegend()
 
 
 # Perform UMAP clustering
-srat <- RunUMAP(srat)
+srat <- RunUMAP(srat, dims= 1:10)
 
 # Visualize UMAP clusters
-DimPlot(srat, reduction = "umap")
+DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 
 
 
@@ -127,60 +126,81 @@ DimPlot(srat, reduction = "umap")
 # Cluster Marker Identification
 #-------------------------------------------------------------------------------
 
-# Note: Install presto package for faster results
+# Find differentially expressed genes in each cluster vs. all other clusters
+# Test used is non-parametric Wilcoxon rank sum test
+# Note: Install presto package for much faster results
+srat.all.markers <- FindAllMarkers(srat, only.pos = TRUE)
+
 # Findconservedmarkers()
-srat.markers <- FindAllMarkers(srat, only.pos = TRUE)
 
 
-
-
-# Scitype Cell Type Identification
+# Cell Type Annotation: Scitype 
 #-------------------------------------------------------------------------------
-
 #https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
-# load gene set and cell type annotation functions
-source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
-source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/sctype_score_.R")
 
+# Load gene set and cell type annotation functions
+source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
+              "master/R/gene_sets_prepare.R"))
+source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
+              "master/R/sctype_score_.R"))
 # DB file
-db_ = "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_full.xlsx";
+db_ = paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
+             "master/ScTypeDB_full.xlsx")
 tissue = "Immune system" 
 # e.g. Immune system,Pancreas,Liver,Eye,Kidney,Brain,Lung,Adrenal,Heart,
 # Intestine,Muscle,Placenta,Spleen,Stomach,Thymus 
 
-# prepare gene sets
+
+# Prepare gene sets
 gs_list = gene_sets_prepare(db_, tissue)
 
-# get cell-type by cell matrix
+# Get score matrix: cell-type (row) by cell (col)
+# NOTE: scRNAseqData argument should correspond to your input scRNA-seq matrix. 
+#   In case Seurat is used, it is either 
+#   1. srat[["RNA"]]@scale.data (default), 
+#   2. srat[["SCT"]]@scale.data, if sctransform is used for normalization,
+#   3. srat[["integrated"]]@scale.data, for joint analysis of multiple datasets.
 es.max = sctype_score(scRNAseqData = srat[["RNA"]]$scale.data, scaled = TRUE, 
                       gs = gs_list$gs_positive, gs2 = gs_list$gs_negative) 
 
-# NOTE: scRNAseqData parameter should correspond to your input scRNA-seq matrix. 
-# In case Seurat is used, it is either 
-# 1. srat[["RNA"]]@scale.data (default), 
-# 2. srat[["SCT"]]@scale.data, if sctransform is used for normalization,
-# 3. srat[["integrated"]]@scale.data, for joint analysis of multiple sc datasets.
+
+function(cl){
+  es.max.cl = sort(rowSums(
+    es.max[ ,rownames(srat@meta.data[srat@meta.data$seurat_clusters==cl, ])]),
+    decreasing = TRUE)
+  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, 
+                  ncells = sum(srat@meta.data$seurat_clusters==cl)), 10)
+}
+
+filter()
 
 # Merge by cluster
+# For each cluster, grab all cells that below to it, find top10 best matches 
+# for cell type
 cL_resutls = do.call("rbind", lapply(unique(srat@meta.data$seurat_clusters), 
                                      function(cl){
-  es.max.cl = sort(rowSums(es.max[ ,rownames(srat@meta.data[srat@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
-  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(srat@meta.data$seurat_clusters==cl)), 10)
+  es.max.cl = sort(rowSums( es.max[ ,rownames(srat@meta.data[
+    srat@meta.data$seurat_clusters==cl, ])]), decreasing = TRUE)
+  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, 
+                  ncells = sum(srat@meta.data$seurat_clusters==cl)), 10)
 }))
+# Grab best cell-type match for each cluster, assign as final cell-type
 sctype_scores = cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)  
 
-# Set low-confident (low ScType score) clusters to "unknown"
-sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < sctype_scores$ncells/4] = "Unknown"
+# Set low-confident (low ScType score) clusters to "Unknown"
+# Sctype scores scale by n, so threshold is score/4
+sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < 
+                     sctype_scores$ncells/4] = "Unknown"
 print(sctype_scores[,1:3])
 
-# Add another column in seurat metadata for celltype
-srat@meta.data$cell_type_scitype <- select(srat@meta.data, "seurat_clusters") %>%
+# Add column in seurat metadata for celltype annotation
+srat@meta.data$ctype_scitype <- select(srat@meta.data, "seurat_clusters") %>%
   left_join(y = select(sctype_scores, "cluster", "type"), 
             by = join_by(seurat_clusters == cluster)) %>% pull("type")
 
 # UMAP Plot of Scitype annotated cells
-DimPlot(srat, reduction = "umap", label = FALSE, repel = TRUE, 
-        group.by = 'cell_type_scitype') + 
+DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE, 
+        group.by = 'ctype_scitype') + 
   ggtitle("SciType Annotated Cells")      
 
 
