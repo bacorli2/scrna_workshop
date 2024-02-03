@@ -9,6 +9,7 @@ library(HGNChelper)
 library(openxlsx)
 library(presto)
 library(ggplot2)
+library(scAnnotatR)
 
 # This code was appropriate from the following sources
 # https://satijalab.org/seurat/articles/pbmc3k_tutorial
@@ -164,16 +165,6 @@ es.max = sctype_score(scRNAseqData = srat[["RNA"]]$scale.data, scaled = TRUE,
                       gs = gs_list$gs_positive, gs2 = gs_list$gs_negative) 
 
 
-function(cl){
-  es.max.cl = sort(rowSums(
-    es.max[ ,rownames(srat@meta.data[srat@meta.data$seurat_clusters==cl, ])]),
-    decreasing = TRUE)
-  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, 
-                  ncells = sum(srat@meta.data$seurat_clusters==cl)), 10)
-}
-
-filter()
-
 # Merge by cluster
 # For each cluster, grab all cells that below to it, find top10 best matches 
 # for cell type
@@ -188,22 +179,32 @@ cL_resutls = do.call("rbind", lapply(unique(srat@meta.data$seurat_clusters),
 sctype_scores = cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)  
 
 # Set low-confident (low ScType score) clusters to "Unknown"
-# Sctype scores scale by n, so threshold is score/4
+# Sctype scores scale by n, so threshold is ncells/4
 sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < 
                      sctype_scores$ncells/4] = "Unknown"
 print(sctype_scores[,1:3])
 
 # Add column in seurat metadata for celltype annotation
-srat@meta.data$ctype_scitype <- select(srat@meta.data, "seurat_clusters") %>%
+srat@meta.data$cell_type_scitype <- select(srat@meta.data, "seurat_clusters") %>%
   left_join(y = select(sctype_scores, "cluster", "type"), 
             by = join_by(seurat_clusters == cluster)) %>% pull("type")
 
 # UMAP Plot of Scitype annotated cells
 DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE, 
-        group.by = 'ctype_scitype') + 
+        group.by = 'cell_type_scitype') + 
   ggtitle("SciType Annotated Cells")      
 
 
-# Cell Trajectory Analysis
+# Cell Classification Using scAnnotateR
+#-------------------------------------------------------------------------------
 
+# Load classification Models
+default_models <- scAnnotatR::load_models("default")
 
+# Perform classification
+srat_scannot <- classify_cells(classify_obj = srat, 
+                             assay = 'RNA', slot = 'counts',
+                             cell_types = "all", 
+                             path_to_models = 'default')
+# Plot best match for each cell_type
+DimPlot(srat_scannot, group.by = "most_probable_cell_type")
