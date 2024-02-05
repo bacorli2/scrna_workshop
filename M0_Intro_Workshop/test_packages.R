@@ -10,6 +10,8 @@ library(openxlsx)
 library(presto)
 library(ggplot2)
 library(scAnnotatR)
+library(SingleR)
+library(celldex)
 
 # This code was appropriate from the following sources
 # https://satijalab.org/seurat/articles/pbmc3k_tutorial
@@ -198,7 +200,7 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 # Cell Classification Using scAnnotateR
 #-------------------------------------------------------------------------------
 
-# Load classification Models
+# DEFAULT MODEL: Load classification Models
 default_models <- scAnnotatR::load_models("default")
 
 # Perform classification
@@ -208,3 +210,54 @@ srat_scannot <- classify_cells(classify_obj = srat,
                              path_to_models = 'default')
 # Plot best match for each cell_type
 DimPlot(srat_scannot, group.by = "most_probable_cell_type")
+
+
+# Trained Model
+--------------------------------------------------------------------------------
+  
+source(here::here("R_override", "scPredict_edited.R"))
+devtools::install_github("immunogenomics/harmony")
+devtools::install_github("powellgenomicslab/scPred")
+
+# Process reference through seurat and scPred
+ref_data <- scPred::pbmc_1 %>%
+    NormalizeData() %>% 
+    FindVariableFeatures() %>% 
+    ScaleData() %>% 
+    RunPCA() %>% 
+    RunUMAP(dims = 1:30)
+ref_model <- scPred::getFeatureSpace(ref_data, "cell_type")
+ref_model <- scPred::trainModel(ref_model)
+
+# Visualize Model Data
+DimPlot(ref_data, group.by = "scPred Reference", label = TRUE, 
+        repel = TRUE) + 
+  ggtitle("scPred:: PBMC_1 Ref")  
+
+# Visualize predicted cell types
+srat_scpred <- scPredict_edited(srat, ref_model)
+DimPlot(srat_scpred, group.by = "scpred_prediction", label = TRUE, 
+        repel = TRUE) + 
+  ggtitle("Cell Types Predicted by scPred")  
+
+
+
+
+
+  
+
+# Cell Classification with SingleR
+#------------------------------------------------------------------------------
+# Load dataset of immune cells bulk RNA-seq (platelets not included)
+ref.se <- celldex::DatabaseImmuneCellExpressionData() 
+# Label celltypes in our srat dataset
+pred.hesc <- SingleR::SingleR(test = srat@assays$RNA$counts, ref = ref.se, 
+                              assay.type.test=1,
+                     labels = ref.se$label.fine)
+
+# Add labels to metadata in srat object
+srat@meta.data$singler_cell_types <- pred.hesc$pruned.labels
+# UMAP Plot of Scitype annotated cells
+DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE, 
+        group.by = 'singler_cell_types') + 
+  ggtitle("SingleR with celldex::ImmuneDataset Ref")     
