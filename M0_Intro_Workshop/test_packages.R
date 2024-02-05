@@ -212,9 +212,9 @@ srat_scannot <- classify_cells(classify_obj = srat,
 DimPlot(srat_scannot, group.by = "most_probable_cell_type")
 
 
-# Trained Model
+# Classification Based Cell Type: scPred
 --------------------------------------------------------------------------------
-  
+ 
 source(here::here("R_override", "scPredict_edited.R"))
 devtools::install_github("immunogenomics/harmony")
 devtools::install_github("powellgenomicslab/scPred")
@@ -230,9 +230,9 @@ ref_model <- scPred::getFeatureSpace(ref_data, "cell_type")
 ref_model <- scPred::trainModel(ref_model)
 
 # Visualize Model Data
-DimPlot(ref_data, group.by = "scPred Reference", label = TRUE, 
+DimPlot(ref_data, group.by = "cell_type", label = TRUE, 
         repel = TRUE) + 
-  ggtitle("scPred:: PBMC_1 Ref")  
+  ggtitle("scPred:: PBMC_1 Reference")  
 
 # Visualize predicted cell types
 srat_scpred <- scPredict_edited(srat, ref_model)
@@ -242,9 +242,6 @@ DimPlot(srat_scpred, group.by = "scpred_prediction", label = TRUE,
 
 
 
-
-
-  
 
 # Cell Classification with SingleR
 #------------------------------------------------------------------------------
