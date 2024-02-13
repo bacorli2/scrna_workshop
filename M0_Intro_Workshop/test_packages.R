@@ -123,6 +123,11 @@ srat <- RunUMAP(srat, dims= 1:10)
 # Visualize UMAP clusters
 DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 
+# Gene expression in each cluster
+# VlnPlot(data, features = c("Pax6", "Rbfox1"), slot = "counts", log = TRUE)
+
+# FeaturePlot(data, features = c("Pax6",  "Eomes", "Aldh1l1",
+#                                "Tbr1",  "Olig2", "Sox2", "Cux2", "Neurog2"))
 
 
 
@@ -257,4 +262,106 @@ srat@meta.data$singler_cell_types <- pred.hesc$pruned.labels
 # UMAP Plot of Scitype annotated cells
 DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE, 
         group.by = 'singler_cell_types') + 
-  ggtitle("SingleR with celldex::ImmuneDataset Ref")     
+  ggtitle("SingleR with celldex::ImmuneDataset Ref")  
+
+
+
+
+# Pseudotime with monocle3
+#-------------------------------------------------------------------------------
+# Code appropriated from:
+# https://ucdavis-bioinformatics-training.github.io/2021-August-Advanced-Topics-
+# in-Single-Cell-RNA-Seq-Trajectory-and-Velocity/data_analysis/monocle_fixed
+library(monocle3)
+
+remotes::install_github('satijalab/seurat-wrappers')
+BiocManager::install("monocle", force = TRUE)
+
+# BiocManager::install("GenomeInfoDb", force = TRUE)
+# devtools::install_github("cysouw/qlcMatrix")
+
+library(SeuratWrappers)
+
+
+# Convert seurat object to monocle
+cds <- SeuratWrappers::as.cell_data_set(srat)
+# Monocle needs partitions as well as clusters
+cds <- monocle3::cluster_cells(cds, resolution=1e-3)
+
+# VIsualize clusters and larger partitions
+p1 <- monocle3::plot_cells(cds, color_cells_by = "cluster", show_trajectory_graph = FALSE)
+p2 <- monocle3::plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = FALSE)
+patchwork::wrap_plots(p1, p2)
+
+# Subsetting partitions
+integrated.sub <- base::subset(Seurat::as.Seurat(cds, assay = NULL), monocle3_partitions == 1)
+cds <- SeuratWrappers::as.cell_data_set(integrated.sub)
+
+# Trajectory analysis
+cds <-  monocle3::learn_graph(cds, use_partition = TRUE, verbose = FALSE)
+
+
+# Visualize Trajectory
+monocle3::plot_cells(cds, color_cells_by = "cluster",  label_groups_by_cluster = FALSE,
+           label_leaves = FALSE, label_branch_points = FALSE)
+
+
+# Color Cells by pseudo time
+cds <-  monocle3::order_cells( cds, root_cells = colnames(  
+  cds[, monocle3::clusters( cds) == 1]) )
+monocle3::plot_cells(cds, color_cells_by = "pseudotime", group_cells_by = "cluster",
+           label_cell_groups = FALSE, label_groups_by_cluster = FALSE,
+           label_leaves = FALSE, label_branch_points = FALSE,
+           label_roots = FALSE, trajectory_graph_color = "grey60")
+
+integrated.sub <- Seurat::as.Seurat(cds, assay = NULL)
+# Monocle assigns cells outside of timeline and InF (erros with seurat)
+# Reassign to NA to make seurat compatible
+integrated.sub@meta.data$monocle3_pseudotime[is.infinite(integrated.sub@meta.data$monocle3_pseudotime)] <- NA
+Seurat::FeaturePlot(integrated.sub, "monocle3_pseudotime")
+
+# Detect genes that vary over a trajectory
+# Can only use multicore on mac or linux
+cds_graph_test_results <- 
+  monocle3::graph_test(cds, neighbor_graph = "principal_graph",
+                       cores = 1)
+# If rbind error:
+# trace(‘calculateLW’, edit = T, where = asNamespace(“monocle3”))
+# find Matrix::rBind and replace with rbind then save.
+
+
+
+# SummarizedExperiment::rowData(cds)$gene_short_name <- SummarizedExperiment::rowData(cds)$gene_name
+
+# VIsualize top genes that varied over trajectorty
+head(cds_graph_test_results, error=FALSE, message=FALSE, warning=FALSE)
+
+
+deg_ids <- rownames(subset(cds_graph_test_results[order(cds_graph_test_results$morans_I, decreasing = TRUE),], q_value < 0.2))
+
+
+# VIsualize most significant genes alog trajectorty
+# Erroring
+monocle3::plot_cells(cds,
+           genes=head(deg_ids, n=1),
+           show_trajectory_graph = FALSE,
+           label_cell_groups = FALSE,
+           label_leaves = FALSE)
+
+
+# "IFNG" %in% rownames(SummarizedExperiment::rowData(cds))   # TRUE
+# "GZMB" %in% rownames(SummarizedExperiment::rowData(cds))    # TRUE
+# 
+# "IFNG" %in% SummarizedExperiment::rowData(cds)$gene_name    # TRUE
+# "GZMB" %in% SummarizedExperiment::rowData(cds)$gene_name    # TRUE
+
+
+library(monocle3)
+gene_modules <- monocle3::find_gene_modules(cds[deg_ids,],
+                                  resolution=c(10^seq(-6,-1)))
+table(gene_modules$module)
+
+
+
+
+
