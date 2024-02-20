@@ -451,9 +451,14 @@ srat.all.markers <- FindAllMarkers(srat, only.pos = TRUE)
 # MONOCLE TURORIAL DATA
 #-------------------------------------------------------------------------------
 
-library(monocle3)
+
 # library(dplyr) # imported for some downstream data manipulation
-# devtools::install_github("cole-trapnell-lab/garnett", ref="monocle3")
+# devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", force = TRUE)
+
+options(ggrepel.max.overlaps = Inf) 
+
+
+library(monocle3)
 
 
 expression_matrix <- 
@@ -474,6 +479,8 @@ set.seed(1)
 # A. Data Normalized by log and size factor for relative gene expression
 # B. Performs linear dimension reduction
 cds <- preprocess_cds(cds, num_dim = 100, method = "PCA")
+# Plot variance explained with PCA
+plot_pc_variance_explained(cds)
 # 1B) Optional: scales datasets between runs/ timepoints (dataset integration)
 cds <- 
   align_cds(cds, alignment_group = "batch", residual_model_formula_str =
@@ -483,7 +490,7 @@ cds <-
 # 2) Nonlinear dimension reduction (UMAP or tSNE) based on pre-processing
 # umap.fast_sgd: Makes the results reproducible
 cds <- reduce_dimension(cds, reduction_method = "UMAP", 
-                        preprocess_method = 'PCA', umap.fast_sgd = 1)
+                        preprocess_method = 'PCA', umap.fast_sgd = FALSE, cores = 1)
 
 
 # 2A) Inspection: Visualize cells project onto reduced dimensional space
@@ -497,8 +504,10 @@ plot_cells(cds, genes=c("che-1", "hlh-17", "nhr-6", "dmd-6","ceh-36", "ham-1"),
 cds <- cluster_cells(cds, reduction_method = "UMAP")
 
 # 3A) Monocle needs cells groups by partition (metaclusters) as well as clusters
-plot_cells(cds, color_cells_by = "cluster", show_trajectory_graph = FALSE)
-plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = FALSE)
+plot_cells(cds, color_cells_by = "cluster", show_trajectory_graph = FALSE, 
+           group_label_size = 4)
+plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = FALSE,
+           group_label_size = 4)
 
 # 4) Fit principal graph (trajectory) for each partition
 # Fits trajectories between projected cells
@@ -506,28 +515,30 @@ plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = FALSE)
 cds <- learn_graph(cds)
 # 4A) Visualize trajectories
 plot_cells(cds, color_cells_by = "cell.type", label_groups_by_cluster = FALSE,
-           label_leaves = FALSE, label_branch_points = FALSE)
+           label_leaves = FALSE, label_branch_points = FALSE, 
+           group_label_size = 4, alpha = 0.5)
 
 # 4B) Order cells in pseudotime and label branch points
 plot_cells(cds, color_cells_by = "embryo.time.bin", label_cell_groups = FALSE,
-           label_leaves = TRUE, label_branch_points=TRUE, graph_label_size = 3)
+           label_leaves = TRUE, label_branch_points=TRUE, graph_label_size = 3, 
+           alpha = 0.5)
 # 4C) Color cells in celltype and and label principle points
 plot_cells(cds, color_cells_by = "cell.type", label_cell_groups = FALSE,
            label_leaves = TRUE, label_principal_points = TRUE, 
-           graph_label_size = 3)
+           graph_label_size = 3, alpha = 0.5)
 
 
 # 5) Order cells in pseudotime from selected principle node(s)
-cds <- order_cells(cds, root_pr_nodes = c("Y_241"))
+cds <- order_cells(cds, root_pr_nodes = c("Y_132"))
 # 5A) visualize pseudotime from root node
 plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
            label_leaves = FALSE, label_branch_points = FALSE, 
-           graph_label_size = 1.5)
+           graph_label_size = 1.5, alpha = 0.5)
 
 # 6) Subset cells from a particular trajectory (graph segment)
 cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
-                                 starting_pr_node = "Y_241", 
-                                 ending_pr_nodes = "Y_228") 
+                                 starting_pr_node = "Y_132", 
+                                 ending_pr_nodes = "Y_177") 
 
 # Must repeat processing pipeline on this segment for next analysis
 # 1) normalization and linear dimension reduction
@@ -539,6 +550,11 @@ cds_sub <- reduce_dimension(cds_sub, reduction_method = "UMAP",
 cds_sub <- cluster_cells(cds_sub)
 # 4) Construct new graph
 cds_sub <- learn_graph(cds_sub)
+# 4A) Color cells in celltype and and label principle points
+plot_cells(cds_sub, color_cells_by = "cell.type", label_cell_groups = FALSE,
+           label_leaves = TRUE, label_principal_points = TRUE, 
+           graph_label_size = 3, alpha = 0.5)
+
 
 
 # 5) Genes that are associated with the selected trajectory 
@@ -553,7 +569,8 @@ gene_module_df <- find_gene_modules(cds_sub[pr_deg_ids,], resolution = 0.001)
 agg_mat <- aggregate_gene_expression(cds_sub, gene_module_df)
 module_dendro <- hclust(dist(agg_mat))
 gene_module_df$module <- factor(gene_module_df$module, 
-                                levels = row.names(agg_mat)[module_dendro$order])
+                                levels = row.names(agg_mat)
+                                [module_dendro$order])
 
 # Visualize gene module activation over pseudotime
 plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE, 

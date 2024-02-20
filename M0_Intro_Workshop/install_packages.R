@@ -23,7 +23,7 @@ BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
 
 
 # Custom pacakges
-devtools::install_github('cole-trapnell-lab/monocle3')
+devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", force = TRUE)
 devtools::install_github('immunogenomics/presto')
 
 # Set base directory of for workshop
