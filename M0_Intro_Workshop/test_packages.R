@@ -489,8 +489,8 @@ cds <-
                      " + bg.b02.loading"))
 # 2) Nonlinear dimension reduction (UMAP or tSNE) based on pre-processing
 # umap.fast_sgd: Makes the results reproducible
-cds <- reduce_dimension(cds, reduction_method = "UMAP", 
-                        preprocess_method = 'PCA', umap.fast_sgd = FALSE, cores = 1)
+cds <- reduce_dimension(cds, reduction_method = "UMAP", umap.fast_sgd = FALSE,
+                        preprocess_method = 'PCA', cores = 1)
 
 
 # 2A) Inspection: Visualize cells project onto reduced dimensional space
