@@ -439,7 +439,7 @@ plot_cells(cds, color_cells_by = "cluster", show_trajectory_graph = FALSE,
 plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = FALSE,
            group_label_size = 4)
 plot_cells(cds, color_cells_by = "cell_type", show_trajectory_graph = FALSE,
-           group_label_size = 4)
+           group_label_size = 4, alpha = 0.5)
 
 
 # 4) Fit principal graph (trajectory) for each partition
@@ -449,7 +449,7 @@ cds <- learn_graph(cds)
 # 4A) Visualize trajectories
 plot_cells(cds, color_cells_by = "cell_type", label_groups_by_cluster = FALSE,
            label_leaves = FALSE, label_branch_points = FALSE, 
-           group_label_size = 4, alpha = 0.5)
+           group_label_size = 4, alpha = 1, label_cell_groups = FALSE)
 
 # # 4B) Order cells in pseudotime and label branch points
 # plot_cells(cds, color_cells_by = "embryo.time.bin", label_cell_groups = FALSE,
