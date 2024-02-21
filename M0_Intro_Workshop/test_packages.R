@@ -529,7 +529,7 @@ plot_cells(cds, color_cells_by = "cell.type", label_cell_groups = FALSE,
 
 
 # 5) Order cells in pseudotime from selected principle node(s)
-cds <- order_cells(cds, root_pr_nodes = c("Y_132"))
+cds <- order_cells(cds, root_pr_nodes = c("Y_22"))
 # 5A) visualize pseudotime from root node
 plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
            label_leaves = FALSE, label_branch_points = FALSE, 
@@ -537,8 +537,9 @@ plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
 
 # 6) Subset cells from a particular trajectory (graph segment)
 cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
-                                 starting_pr_node = "Y_132", 
-                                 ending_pr_nodes = "Y_177") 
+                                 starting_pr_node = "Y_22", 
+                                 ending_pr_nodes = c("Y_82"),
+                                 clear_cds = TRUE) 
 
 # Must repeat processing pipeline on this segment for next analysis
 # 1) normalization and linear dimension reduction
@@ -551,9 +552,10 @@ cds_sub <- cluster_cells(cds_sub)
 # 4) Construct new graph
 cds_sub <- learn_graph(cds_sub)
 # 4A) Color cells in celltype and and label principle points
-plot_cells(cds_sub, color_cells_by = "cell.type", label_cell_groups = FALSE,
-           label_leaves = TRUE, label_principal_points = TRUE, 
-           graph_label_size = 3, alpha = 0.5)
+plot_cells(cds_sub, color_cells_by = "cell.type", 
+           label_cell_groups = FALSE, label_leaves = TRUE, 
+           label_principal_points = TRUE, alpha = 0.5,
+           graph_label_size = 3)
 
 
 
@@ -576,3 +578,9 @@ gene_module_df$module <- factor(gene_module_df$module,
 plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE, 
            show_trajectory_graph = TRUE)
 
+
+
+
+
+# Monocle from Seurat Importation
+#-------------------------------------------------------------------------------
