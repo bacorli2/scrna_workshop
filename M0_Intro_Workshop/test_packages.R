@@ -2,14 +2,14 @@
 
 library(tidyverse)
 
-library(dplyr)
 library(Seurat)
 library(patchwork)
-library(here)
+# library(here)
 library(HGNChelper)
 library(openxlsx)
 library(presto)
-library(ggplot2)
+
+
 library(scAnnotatR)
 library(SingleR)
 library(celldex)
@@ -28,12 +28,14 @@ here::i_am("README.md")
 if (!file.exists(here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz"))) {
   dir.create(here::here("_temp_data"))
   download.file("https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz",
-                destfile = here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz"))
+                destfile = here::here("_temp_data", 
+                                      "pbmc3k_filtered_gene_bc_matrices.tar.gz"))
   untar(here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz"), 
         exdir = here::here("_temp_data"))
 }
 # Load the srat dataset
-srat.data <- Read10X(data.dir = here("_temp_data", "filtered_gene_bc_matrices/hg19"))
+srat.data <- Read10X(data.dir = here::here("_temp_data", 
+                                           "filtered_gene_bc_matrices/hg19"))
 
 # Initialize the Seurat object with the raw count matrix (non-normalized data).
 # Include genes that are found within at least 3 cells
@@ -143,66 +145,66 @@ srat.all.markers <- FindAllMarkers(srat, only.pos = TRUE)
 # Findconservedmarkers()
 
 
-# # Cell Type Annotation: Scitype 
-# #-------------------------------------------------------------------------------
-# #https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
-# 
-# # Load gene set and cell type annotation functions
-# source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
-#               "master/R/gene_sets_prepare.R"))
-# source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
-#               "master/R/sctype_score_.R"))
-# # DB file
-# db_ = paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
-#              "master/ScTypeDB_full.xlsx")
-# tissue = "Immune system" 
-# # e.g. Immune system,Pancreas,Liver,Eye,Kidney,Brain,Lung,Adrenal,Heart,
-# # Intestine,Muscle,Placenta,Spleen,Stomach,Thymus 
-# 
-# 
-# # Prepare gene sets
-# gs_list = gene_sets_prepare(db_, tissue)
-# 
-# # Get score matrix: cell-type (row) by cell (col)
-# # NOTE: scRNAseqData argument should correspond to your input scRNA-seq matrix. 
-# #   In case Seurat is used, it is either 
-# #   1. srat[["RNA"]]@scale.data (default), 
-# #   2. srat[["SCT"]]@scale.data, if sctransform is used for normalization,
-# #   3. srat[["integrated"]]@scale.data, for joint analysis of multiple datasets.
-# es.max = sctype_score(scRNAseqData = srat[["RNA"]]$scale.data, scaled = TRUE, 
-#                       gs = gs_list$gs_positive, gs2 = gs_list$gs_negative) 
-# 
-# 
-# # Merge by cluster
-# # For each cluster, grab all cells that below to it, find top10 best matches 
-# # for cell type
-# cL_resutls = do.call("rbind", lapply(unique(srat@meta.data$seurat_clusters), 
-#                                      function(cl){
-#   es.max.cl = sort(rowSums( es.max[ ,rownames(srat@meta.data[
-#     srat@meta.data$seurat_clusters==cl, ])]), decreasing = TRUE)
-#   head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, 
-#                   ncells = sum(srat@meta.data$seurat_clusters==cl)), 10)
-# }))
-# # Grab best cell-type match for each cluster, assign as final cell-type
-# sctype_scores = cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)  
-# 
-# # Set low-confident (low ScType score) clusters to "Unknown"
-# # Sctype scores scale by n, so threshold is ncells/4
-# sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < 
-#                      sctype_scores$ncells/4] = "Unknown"
-# print(sctype_scores[,1:3])
-# 
-# # Add column in seurat metadata for celltype annotation
-# srat@meta.data$cell_type_scitype <- select(srat@meta.data, "seurat_clusters") %>%
-#   left_join(y = select(sctype_scores, "cluster", "type"), 
-#             by = join_by(seurat_clusters == cluster)) %>% pull("type")
-# 
-# # UMAP Plot of Scitype annotated cells
-# DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE, 
-#         group.by = 'cell_type_scitype') + 
-#   ggtitle("SciType Annotated Cells")      
-# 
-# 
+# Cell Type Annotation: Scitype
+#-------------------------------------------------------------------------------
+#https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
+
+# Load gene set and cell type annotation functions
+source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
+              "master/R/gene_sets_prepare.R"))
+source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
+              "master/R/sctype_score_.R"))
+# DB file
+db_ = paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
+             "master/ScTypeDB_full.xlsx")
+tissue = "Immune system"
+# e.g. Immune system,Pancreas,Liver,Eye,Kidney,Brain,Lung,Adrenal,Heart,
+# Intestine,Muscle,Placenta,Spleen,Stomach,Thymus
+
+
+# Prepare gene sets
+gs_list = gene_sets_prepare(db_, tissue)
+
+# Get score matrix: cell-type (row) by cell (col)
+# NOTE: scRNAseqData argument should correspond to your input scRNA-seq matrix.
+#   In case Seurat is used, it is either
+#   1. srat[["RNA"]]@scale.data (default),
+#   2. srat[["SCT"]]@scale.data, if sctransform is used for normalization,
+#   3. srat[["integrated"]]@scale.data, for joint analysis of multiple datasets.
+es.max = sctype_score(scRNAseqData = srat[["RNA"]]$scale.data, scaled = TRUE,
+                      gs = gs_list$gs_positive, gs2 = gs_list$gs_negative)
+
+
+# Merge by cluster
+# For each cluster, grab all cells that below to it, find top10 best matches
+# for cell type
+cL_resutls = do.call("rbind", lapply(unique(srat@meta.data$seurat_clusters),
+                                     function(cl){
+  es.max.cl = sort(rowSums( es.max[ ,rownames(srat@meta.data[
+    srat@meta.data$seurat_clusters==cl, ])]), decreasing = TRUE)
+  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl,
+                  ncells = sum(srat@meta.data$seurat_clusters==cl)), 10)
+}))
+# Grab best cell-type match for each cluster, assign as final cell-type
+sctype_scores = cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)
+
+# Set low-confident (low ScType score) clusters to "Unknown"
+# Sctype scores scale by n, so threshold is ncells/4
+sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) <
+                     sctype_scores$ncells/4] = "Unknown"
+print(sctype_scores[,1:3])
+
+# Add column in seurat metadata for celltype annotation
+srat@meta.data$cell_type_scitype <- select(srat@meta.data, "seurat_clusters") %>%
+  left_join(y = select(sctype_scores, "cluster", "type"),
+            by = join_by(seurat_clusters == cluster)) %>% pull("type")
+
+# UMAP Plot of Scitype annotated cells
+DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
+        group.by = 'cell_type_scitype') +
+  ggtitle("SciType Annotated Cells")
+
+
 # # Cell Classification Using scAnnotateR
 # #-------------------------------------------------------------------------------
 # 
@@ -268,33 +270,45 @@ srat.all.markers <- FindAllMarkers(srat, only.pos = TRUE)
 
 
 
-# # Pseudotime with monocle3
-# #-------------------------------------------------------------------------------
-# # Code appropriated from:
-# # https://ucdavis-bioinformatics-training.github.io/2021-August-Advanced-Topics-
-# # in-Single-Cell-RNA-Seq-Trajectory-and-Velocity/data_analysis/monocle_fixed
-# # library(monocle3)
-# # library(SeuratWrappers)library(SeuratWrappers)
-# 
-# remotes::install_github('satijalab/seurat-wrappers')
-# # BiocManager::install("monocle", force = TRUE)
-# 
-# # BiocManager::install("GenomeInfoDb", force = TRUE)
-# # devtools::install_github("cysouw/qlcMatrix")
-# 
-# 
+# Pseudotime with monocle3
+#-------------------------------------------------------------------------------
+# Code appropriated from:
+# https://ucdavis-bioinformatics-training.github.io/2021-August-Advanced-Topics-
+# in-Single-Cell-RNA-Seq-Trajectory-and-Velocity/data_analysis/monocle_fixed
+# library(monocle3)
+# library(SeuratWrappers)library(SeuratWrappers)
 # devtools::install_github('cole-trapnell-lab/monocle3',ref='develop')
-# 
-# # Convert seurat object to monocle with wrapper, and additional REQUIRED steps
-# cds <- SeuratWrappers::as.cell_data_set(srat)
-# # Bugfix from thread: https://github.com/satijalab/seurat-wrappers/issues/54
-# ## Calculate size factors using built-in function in monocle3, add gene names
-# cds <- estimate_size_factors(cds)
-# cds@rowRanges@elementMetadata@listData[["gene_short_name"]] <- rownames(srat[["RNA"]])
-# 
-# 
-# 
-# 
+# remotes::install_github('satijalab/seurat-wrappers')
+# BiocManager::install("monocle", force = TRUE)
+
+# BiocManager::install("GenomeInfoDb", force = TRUE)
+# devtools::install_github("cysouw/qlcMatrix")
+
+# devtools::install_github("satijalab/seurat-wrappers")
+
+
+
+
+library(monocle3)
+
+# Convert seurat object to monocle with wrapper, and additional REQUIRED steps
+cds <- SeuratWrappers::as.cell_data_set(srat)
+# Bugfix from thread: https://github.com/satijalab/seurat-wrappers/issues/54
+## Calculate size factors using built-in function in monocle3, add gene names
+cds <- estimate_size_factors(cds)
+cds@rowRanges@elementMetadata@listData[["gene_short_name"]] <- rownames(srat[["RNA"]])
+
+cds <- reduce_dimension(cds, reduction_method = "UMAP", umap.fast_sgd = FALSE,
+                        preprocess_method = 'PCA', cores = 1)
+
+
+# Monocle needs partitions as well as clusters
+# Using cluster_method = leiden raises error with nonsymmetric adjacency matrix
+cds <- cluster_cells(cds, reduction_method = "UMAP", k = 20, cluster_method = "louvain",
+                     num_iter = 1, partition_qval = 0.05, weight = FALSE, random_seed = 1,
+                     verbose = FALSE)
+
+
 # 
 # # cds <- Seurat::as.CellDataSet(srat)
 # # Monocle needs partitions as well as clusters
@@ -379,53 +393,48 @@ srat.all.markers <- FindAllMarkers(srat, only.pos = TRUE)
 # #                                   resolution=c(10^seq(-6,-1)))
 # # table(gene_modules$module)
 # 
-# 
-# 
-# # Monocle from scratch
-# #-------------------------------------------------------------------------------
-# 
-# 
-# library(monocle3)
-# 
-# 
-# # Read10X(data.dir = here("_temp_data", "filtered_gene_bc_matrices/hg19"))
-# 
-# expression_data  = 
-#   Matrix::readMM(here::here("_temp_data", "filtered_gene_bc_matrices/hg19/matrix.mtx"))
-# 
-# cell_metadata = 
-#   readr::read_tsv(here::here("_temp_data", "filtered_gene_bc_matrices/hg19/barcodes.tsv"),
-#                   col_names = FALSE)
-# 
-# gene_metadata = 
-#   readr::read_tsv(here::here("_temp_data", "filtered_gene_bc_matrices/hg19/genes.tsv"), 
-#                   col_names = FALSE) %>% rename(id = X1, gene_short_name = X2)
-# 
-# cds <-  monocle3::load_mm_data(
-#   mat_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19", "matrix.mtx"), 
-#   feature_anno_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19","genes.tsv"), 
-#   cell_anno_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19","barcodes.tsv"))
-# 
-# # Annotate batches within data (in this case experiment is single batch)
-# cds@colData$plate = factor(1)
-# 
-# 
-# ## Step 1: Normalize and pre-process the data
-# cds <- preprocess_cds(cds, num_dim = 100)
-# plot_pc_variance_explained(cds)
-# ## Step 3: Reduce the dimensions using UMAP
-# cds <- reduce_dimension(cds, preprocess_method = 'PCA')
-# 
-# plot_cells(cds)
-# 
-# 
-# ## Step 4: Cluster the cells
-# cds <- cluster_cells(cds)
-# ## Step 5: Learn a graph
-# cds <- learn_graph(cds)
-# ## Step 6: Order cells
-# cds <- order_cells(cds)
-# plot_cells(cds)
+
+
+
+
+# Monocle from scratch
+#-------------------------------------------------------------------------------
+
+library(monocle3)
+library(dplyr)
+cds <-  monocle3::load_mm_data(
+  mat_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19", "matrix.mtx"),
+  feature_anno_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19","genes.tsv"),
+  cell_anno_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19","barcodes.tsv"),
+  header = FALSE)
+
+# Rename short gene metadata column to "gene_short_name".
+temp_dframe <- cds@rowRanges@elementMetadata 
+colnames(temp_dframe) <- "gene_short_name"
+cds@rowRanges@elementMetadata <- temp_dframe
+
+# Annotate batches within data (in this case experiment is single batch)
+cds@colData$plate = factor(1)
+
+## Step 1: Normalize and pre-process the data
+cds <- preprocess_cds(cds, num_dim = 100)
+plot_pc_variance_explained(cds)
+## Step 3: Reduce the dimensions using UMAP
+cds <- reduce_dimension(cds, preprocess_method = 'PCA')
+
+plot_cells(cds, show_trajectory_graph = FALSE)
+
+
+## Step 4: Cluster the cells
+cds <- cluster_cells(cds, reduction_method = "UMAP", k = 20, cluster_method = "louvain",
+                     num_iter = 1, partition_qval = 0.05, weight = FALSE, random_seed = 1,
+                     verbose = FALSE)
+
+## Step 5: Learn a graph
+cds <- learn_graph(cds)
+## Step 6: Order cells
+cds <- order_cells(cds)
+plot_cells(cds)
 
 
 
@@ -453,7 +462,9 @@ srat.all.markers <- FindAllMarkers(srat, only.pos = TRUE)
 
 
 # library(dplyr) # imported for some downstream data manipulation
-# devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", force = TRUE)
+# devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", force = TRUE, TRUE,dependencies = TRUE)
+# remotes::install_github('satijalab/seurat-wrappers', force = TRUE,dependencies = TRUE)
+
 
 options(ggrepel.max.overlaps = Inf) 
 
@@ -582,5 +593,3 @@ plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE,
 
 
 
-# Monocle from Seurat Importation
-#-------------------------------------------------------------------------------
