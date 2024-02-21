@@ -4,15 +4,16 @@ library(tidyverse)
 
 library(Seurat)
 library(patchwork)
-# library(here)
 library(HGNChelper)
 library(openxlsx)
 library(presto)
-
-
 library(scAnnotatR)
 library(SingleR)
 library(celldex)
+library(monocle3)
+library(SeuratWrappers)
+
+options(ggrepel.max.overlaps = Inf) 
 
 # This code was appropriate from the following sources
 # https://satijalab.org/seurat/articles/pbmc3k_tutorial
@@ -145,9 +146,11 @@ srat.all.markers <- FindAllMarkers(srat, only.pos = TRUE)
 # Findconservedmarkers()
 
 
+
 # Cell Type Annotation: Scitype
 #-------------------------------------------------------------------------------
 #https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
+
 
 # Load gene set and cell type annotation functions
 source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
@@ -195,13 +198,13 @@ sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) <
 print(sctype_scores[,1:3])
 
 # Add column in seurat metadata for celltype annotation
-srat@meta.data$cell_type_scitype <- select(srat@meta.data, "seurat_clusters") %>%
+srat@meta.data$cell_type <- select(srat@meta.data, "seurat_clusters") %>%
   left_join(y = select(sctype_scores, "cluster", "type"),
             by = join_by(seurat_clusters == cluster)) %>% pull("type")
 
 # UMAP Plot of Scitype annotated cells
 DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
-        group.by = 'cell_type_scitype') +
+        group.by = 'cell_type') +
   ggtitle("SciType Annotated Cells")
 
 
@@ -270,194 +273,7 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 
 
 
-# Pseudotime with monocle3
-#-------------------------------------------------------------------------------
-# Code appropriated from:
-# https://ucdavis-bioinformatics-training.github.io/2021-August-Advanced-Topics-
-# in-Single-Cell-RNA-Seq-Trajectory-and-Velocity/data_analysis/monocle_fixed
-# library(monocle3)
-# library(SeuratWrappers)library(SeuratWrappers)
-# devtools::install_github('cole-trapnell-lab/monocle3',ref='develop')
-# remotes::install_github('satijalab/seurat-wrappers')
-# BiocManager::install("monocle", force = TRUE)
-
-# BiocManager::install("GenomeInfoDb", force = TRUE)
-# devtools::install_github("cysouw/qlcMatrix")
-
-# devtools::install_github("satijalab/seurat-wrappers")
-
-
-
-
-library(monocle3)
-
-# Convert seurat object to monocle with wrapper, and additional REQUIRED steps
-cds <- SeuratWrappers::as.cell_data_set(srat)
-# Bugfix from thread: https://github.com/satijalab/seurat-wrappers/issues/54
-## Calculate size factors using built-in function in monocle3, add gene names
-cds <- estimate_size_factors(cds)
-cds@rowRanges@elementMetadata@listData[["gene_short_name"]] <- rownames(srat[["RNA"]])
-
-cds <- reduce_dimension(cds, reduction_method = "UMAP", umap.fast_sgd = FALSE,
-                        preprocess_method = 'PCA', cores = 1)
-
-
-# Monocle needs partitions as well as clusters
-# Using cluster_method = leiden raises error with nonsymmetric adjacency matrix
-cds <- cluster_cells(cds, reduction_method = "UMAP", k = 20, cluster_method = "louvain",
-                     num_iter = 1, partition_qval = 0.05, weight = FALSE, random_seed = 1,
-                     verbose = FALSE)
-
-
-# 
-# # cds <- Seurat::as.CellDataSet(srat)
-# # Monocle needs partitions as well as clusters
-# cds <- monocle3::cluster_cells(cds, resolution=1e-3)
-# 
-# # Visualize clusters and larger partitions
-# p1 <- monocle3::plot_cells(cds, color_cells_by = "cluster", show_trajectory_graph = FALSE)
-# p2 <- monocle3::plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = FALSE)
-# patchwork::wrap_plots(p1, p2)
-# 
-# 
-# 
-# 
-# # Subsetting partitions
-# integrated.sub <- base::subset(Seurat::as.Seurat(cds, assay = NULL), monocle3_partitions == 1)
-# cds <- SeuratWrappers::as.cell_data_set(integrated.sub)
-# cds <- estimate_size_factors(cds)
-# cds@rowRanges@elementMetadata@listData[["gene_short_name"]] <- rownames(srat[["RNA"]])
-# 
-# 
-# # Trajectory analysis
-# cds <-  monocle3::learn_graph(cds, use_partition = TRUE, verbose = FALSE)
-# 
-# 
-# # Visualize Trajectory
-# monocle3::plot_cells(cds, color_cells_by = "cluster",  label_groups_by_cluster = FALSE,
-#            label_leaves = FALSE, label_branch_points = FALSE)
-# 
-# 
-# # Color Cells by pseudo time
-# cds <-  monocle3::order_cells( cds, root_cells = colnames(  
-#   cds[, monocle3::clusters( cds) == 1]) )
-# monocle3::plot_cells(cds, color_cells_by = "pseudotime", group_cells_by = "cluster",
-#            label_cell_groups = FALSE, label_groups_by_cluster = FALSE,
-#            label_leaves = FALSE, label_branch_points = FALSE,
-#            label_roots = FALSE, trajectory_graph_color = "grey60")
-# 
-# integrated.sub <- Seurat::as.Seurat(cds, assay = NULL)
-# # Monocle assigns cells outside of timeline and InF (erros with seurat)
-# # Reassign to NA to make seurat compatible
-# # integrated.sub@meta.data$monocle3_pseudotime[is.infinite(integrated.sub@meta.data$monocle3_pseudotime)] <- NA
-# Seurat::FeaturePlot(integrated.sub, "monocle3_pseudotime")
-# 
-# # Detect genes that vary over a trajectory
-# # Can only use multicore on mac or linux
-# cds_graph_test_results <- 
-#   monocle3::graph_test(cds, neighbor_graph = "principal_graph",
-#                        cores = 1)
-# # If rbind error:
-# # trace(‘calculateLW’, edit = T, where = asNamespace(“monocle3”))
-# # find Matrix::rBind and replace with rbind then save.
-# 
-# 
-# 
-# # SummarizedExperiment::rowData(cds)$gene_short_name <- SummarizedExperiment::rowData(cds)$gene_name
-# 
-# # VIsualize top genes that varied over trajectorty
-# head(cds_graph_test_results, error=FALSE, message=FALSE, warning=FALSE)
-# 
-# 
-# deg_ids <- rownames(subset(cds_graph_test_results[order(cds_graph_test_results$morans_I, decreasing = TRUE),], q_value < 0.2))
-# 
-# cds <- estimate_size_factors(cds)
-# # VIsualize most significant genes alog trajectorty
-# # Erroring
-# monocle3::plot_cells(cds,
-#            genes=head(deg_ids),
-#            show_trajectory_graph = FALSE,
-#            label_cell_groups = FALSE,
-#            label_leaves = FALSE)
-# 
-# 
-# # "IFNG" %in% rownames(SummarizedExperiment::rowData(cds))   # TRUE
-# # "GZMB" %in% rownames(SummarizedExperiment::rowData(cds))    # TRUE
-# # 
-# # "IFNG" %in% SummarizedExperiment::rowData(cds)$gene_name    # TRUE
-# # "GZMB" %in% SummarizedExperiment::rowData(cds)$gene_name    # TRUE
-# 
-# # 
-# # library(monocle3)
-# # gene_modules <- monocle3::find_gene_modules(cds[deg_ids,],
-# #                                   resolution=c(10^seq(-6,-1)))
-# # table(gene_modules$module)
-# 
-
-
-
-
-# Monocle from scratch
-#-------------------------------------------------------------------------------
-
-library(monocle3)
-library(dplyr)
-cds <-  monocle3::load_mm_data(
-  mat_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19", "matrix.mtx"),
-  feature_anno_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19","genes.tsv"),
-  cell_anno_path = here::here("_temp_data", "filtered_gene_bc_matrices", "hg19","barcodes.tsv"),
-  header = FALSE)
-
-# Rename short gene metadata column to "gene_short_name".
-temp_dframe <- cds@rowRanges@elementMetadata 
-colnames(temp_dframe) <- "gene_short_name"
-cds@rowRanges@elementMetadata <- temp_dframe
-
-# Annotate batches within data (in this case experiment is single batch)
-cds@colData$plate = factor(1)
-
-## Step 1: Normalize and pre-process the data
-cds <- preprocess_cds(cds, num_dim = 100)
-plot_pc_variance_explained(cds)
-## Step 3: Reduce the dimensions using UMAP
-cds <- reduce_dimension(cds, preprocess_method = 'PCA')
-
-plot_cells(cds, show_trajectory_graph = FALSE)
-
-
-## Step 4: Cluster the cells
-cds <- cluster_cells(cds, reduction_method = "UMAP", k = 20, cluster_method = "louvain",
-                     num_iter = 1, partition_qval = 0.05, weight = FALSE, random_seed = 1,
-                     verbose = FALSE)
-
-## Step 5: Learn a graph
-cds <- learn_graph(cds)
-## Step 6: Order cells
-cds <- order_cells(cds)
-plot_cells(cds)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# MONOCLE TURORIAL DATA
+# Monocle3 Pseudotime, tutorial dataset
 #-------------------------------------------------------------------------------
 
 
@@ -465,19 +281,22 @@ plot_cells(cds)
 # devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", force = TRUE, TRUE,dependencies = TRUE)
 # remotes::install_github('satijalab/seurat-wrappers', force = TRUE,dependencies = TRUE)
 
+# Example small dataset (real data)
+celegans_path <- here::here("_temp_data", "celegans_embryo", "count_matrix.Rdata")
+if (!file.exists(celegans_path)) {
+  expression_matrix <- 
+    readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_expression.rds"))
+  cell_metadata <- 
+    readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_colData.rds"))
+  gene_annotation <- 
+    readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_rowData.rds"))
+  
+  dir.create(here::here("_temp_data", "celegans_embryo"))
+  save(expression_matrix, cell_metadata, gene_annotation,
+       file = celegans_path)
+}
+load(file = celegans_path)
 
-options(ggrepel.max.overlaps = Inf) 
-
-
-library(monocle3)
-
-
-expression_matrix <- 
-  readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_expression.rds"))
-cell_metadata <- 
-  readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_colData.rds"))
-gene_annotation <- 
-  readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_rowData.rds"))
 
 # Load 10x dataset into Monocle
 cds <- new_cell_data_set(expression_matrix, cell_metadata = cell_metadata,
@@ -592,4 +411,102 @@ plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE,
 
 
 
+
+# Monocle with PBMC3K Data, Seurat Bridge
+#-------------------------------------------------------------------------------
+
+# Convert seurat object to monocle with wrapper, and additional REQUIRED steps
+cds <- SeuratWrappers::as.cell_data_set(srat)
+# Bugfix from thread: https://github.com/satijalab/seurat-wrappers/issues/54
+## Calculate size factors using built-in function in monocle3, add gene names
+cds <- estimate_size_factors(cds)
+cds@rowRanges@elementMetadata@listData[["gene_short_name"]] <- 
+  rownames(srat[["RNA"]])
+
+# Nonlinear dimension reduction
+cds <- reduce_dimension(cds, reduction_method = "UMAP", umap.fast_sgd = FALSE,
+                        preprocess_method = 'PCA', cores = 1)
+
+# Monocle needs partitions as well as clusters
+# Using cluster_method = leiden raises error with nonsymmetric adjacency matrix
+cds <- cluster_cells(cds, reduction_method = "UMAP", k = 20, num_iter = 1,
+                     cluster_method = "louvain", partition_qval = 0.05,
+                     weight = FALSE, random_seed = 1,  verbose = FALSE)
+
+# 3A) Monocle needs cells groups by partition (metaclusters) as well as clusters
+plot_cells(cds, color_cells_by = "cluster", show_trajectory_graph = FALSE, 
+           group_label_size = 4)
+plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = FALSE,
+           group_label_size = 4)
+plot_cells(cds, color_cells_by = "cell_type", show_trajectory_graph = FALSE,
+           group_label_size = 4)
+
+
+# 4) Fit principal graph (trajectory) for each partition
+# Fits trajectories between projected cells
+# Identifies branchpoints and endpoints with cell trajectories
+cds <- learn_graph(cds)
+# 4A) Visualize trajectories
+plot_cells(cds, color_cells_by = "cell_type", label_groups_by_cluster = FALSE,
+           label_leaves = FALSE, label_branch_points = FALSE, 
+           group_label_size = 4, alpha = 0.5)
+
+# # 4B) Order cells in pseudotime and label branch points
+# plot_cells(cds, color_cells_by = "embryo.time.bin", label_cell_groups = FALSE,
+#            label_leaves = TRUE, label_branch_points=TRUE, graph_label_size = 3, 
+#            alpha = 0.5)
+# 4C) Color cells in celltype and and label principle points
+plot_cells(cds, color_cells_by = "cell_type", label_cell_groups = FALSE,
+           label_leaves = TRUE, label_principal_points = TRUE, 
+           graph_label_size = 3, alpha = 0.5)
+
+# 5) Order cells in pseudotime from selected principle node(s)
+cds <- order_cells(cds, root_pr_nodes = c("Y_108"))
+# 5A) visualize pseudotime from root node
+plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
+           label_leaves = FALSE, label_branch_points = FALSE, 
+           graph_label_size = 1.5, alpha = 0.5)
+
+# 6) Subset cells from a particular trajectory (graph segment)
+cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
+                                 starting_pr_node = "Y_108", 
+                                 ending_pr_nodes = c("Y_125"),
+                                 clear_cds = TRUE) 
+
+# Must repeat processing pipeline on this segment for next analysis
+# 1) normalization and linear dimension reduction
+cds_sub <- preprocess_cds(cds_sub, num_dim = 100, method = "PCA")
+# 2) Nonlinear dimension reduction (UMAP) based on preprocessing
+cds_sub <- reduce_dimension(cds_sub, reduction_method = "UMAP", 
+                            preprocess_method = "PCA")
+# 3) Cluster cells in reduced space
+cds_sub <- cluster_cells(cds_sub)
+# 4) Construct new graph
+cds_sub <- learn_graph(cds_sub)
+# 4A) Color cells in celltype and and label principle points
+plot_cells(cds_sub, color_cells_by = "cell_type", 
+           label_cell_groups = FALSE, label_leaves = TRUE, 
+           label_principal_points = TRUE, alpha = 0.5,
+           graph_label_size = 3)
+
+
+
+# 5) Genes that are associated with the selected trajectory 
+#  (cores = 1) for reproducibility
+subset_pr_test_res <- graph_test(cds_sub, neighbor_graph="principal_graph", 
+                                 cores = 1)
+pr_deg_ids <- row.names(subset(subset_pr_test_res, q_value < 0.05))
+# 6) Group genes into modules to visualize expression trends over pseudotime
+gene_module_df <- find_gene_modules(cds_sub[pr_deg_ids,], resolution = 0.001)
+
+# 7) Order modules by similarity (via hclust) to see which ones activate earlier
+agg_mat <- aggregate_gene_expression(cds_sub, gene_module_df)
+module_dendro <- hclust(dist(agg_mat))
+gene_module_df$module <- factor(gene_module_df$module, 
+                                levels = row.names(agg_mat)
+                                [module_dendro$order])
+
+# Visualize gene module activation over pseudotime
+plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE, 
+           show_trajectory_graph = TRUE)
 
