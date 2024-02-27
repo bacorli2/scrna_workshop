@@ -21,6 +21,10 @@ options(ggrepel.max.overlaps = Inf)
 # Set wd to base of workshop repository
 here::i_am("README.md")
 
+
+# Dataset Importation
+#-------------------------------------------------------------------------------
+
 # Example small dataset (real data)
 # Used from this tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial
 # 2,700 single cells that were sequenced on the Illumina NextSeq 500
