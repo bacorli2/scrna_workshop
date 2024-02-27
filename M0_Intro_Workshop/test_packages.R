@@ -352,11 +352,11 @@ plot_cells(cds, color_cells_by = "cell.type", label_groups_by_cluster = FALSE,
            label_leaves = FALSE, label_branch_points = FALSE, 
            group_label_size = 4, alpha = 0.5)
 
-# 4B) Order cells in pseudotime and label branch points
+# 4B) Order cells by pseudotime and label branch points
 plot_cells(cds, color_cells_by = "embryo.time.bin", label_cell_groups = FALSE,
            label_leaves = TRUE, label_branch_points=TRUE, graph_label_size = 3, 
            alpha = 0.5)
-# 4C) Color cells in celltype and and label principle points
+# 4C) Color cells by celltype and and label principle points (for ordering)
 plot_cells(cds, color_cells_by = "cell.type", label_cell_groups = FALSE,
            label_leaves = TRUE, label_principal_points = TRUE, 
            graph_label_size = 3, alpha = 0.5)
@@ -385,7 +385,7 @@ cds_sub <- reduce_dimension(cds_sub, reduction_method = "UMAP",
 cds_sub <- cluster_cells(cds_sub)
 # 4) Construct new graph
 cds_sub <- learn_graph(cds_sub)
-# 4A) Color cells in celltype and and label principle points
+# 4A) Color cells by celltype and and label principle points
 plot_cells(cds_sub, color_cells_by = "cell.type", 
            label_cell_groups = FALSE, label_leaves = TRUE, 
            label_principal_points = TRUE, alpha = 0.5,
@@ -416,10 +416,10 @@ plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE,
 
 
 
-# Monocle with PBMC3K Data, Seurat Bridge
+# Monocle with PBMC3K Dataset, Seurat Bridged
 #-------------------------------------------------------------------------------
 
-# Convert seurat object to monocle with wrapper, and additional REQUIRED steps
+# Convert seurat object to monocle with wrapper (srat object from beginning)
 cds <- SeuratWrappers::as.cell_data_set(srat)
 # Bugfix from thread: https://github.com/satijalab/seurat-wrappers/issues/54
 ## Calculate size factors using built-in function in monocle3, add gene names
@@ -432,7 +432,7 @@ cds <- reduce_dimension(cds, reduction_method = "UMAP", umap.fast_sgd = FALSE,
                         preprocess_method = 'PCA', cores = 1)
 
 # Monocle needs partitions as well as clusters
-# Using cluster_method = leiden raises error with nonsymmetric adjacency matrix
+# Using cluster_method = leiden raises error with Nonsymmetric adjacency matrix
 cds <- cluster_cells(cds, reduction_method = "UMAP", k = 20, num_iter = 1,
                      cluster_method = "louvain", partition_qval = 0.05,
                      weight = FALSE, random_seed = 1,  verbose = FALSE)
