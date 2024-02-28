@@ -166,7 +166,8 @@ srat_int <- RunUMAP(srat_int, dims= 1:10)
 # Visualize UMAP clusters
 DimPlot(srat_int, reduction = "umap", label = TRUE,
         repel = TRUE)
-
+# OVerwrite seurat object for downstream steps
+srat <- srat_int
 
 
 
@@ -176,18 +177,15 @@ DimPlot(srat_int, reduction = "umap", label = TRUE,
 # Find differentially expressed genes in each cluster vs. all other clusters
 # Test used is non-parametric Wilcoxon rank sum test
 # Note: Install presto package for much faster results
-srat.all.markers <- FindAllMarkers(srat, only.pos = TRUE)
+srat_int.all.markers <- FindAllMarkers(srat_int, only.pos = TRUE)
 
-# Findconservedmarkers()
 
 
 
 # Cell Type Annotation: Scitype
 #-------------------------------------------------------------------------------
 #https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
-
-
-# Load gene set and cell type annotation functions
+# Load gene set and cell type annotation functions into memory
 source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
               "master/R/gene_sets_prepare.R"))
 source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
@@ -243,75 +241,99 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
   ggtitle("SciType Annotated Cells")
 
 
-# # Cell Classification Using scAnnotateR
-# #-------------------------------------------------------------------------------
-# 
-# # DEFAULT MODEL: Load classification Models
-# default_models <- scAnnotatR::load_models("default")
-# 
-# # Perform classification
-# srat_scannot <- classify_cells(classify_obj = srat, 
-#                              assay = 'RNA', slot = 'counts',
-#                              cell_types = "all", 
-#                              path_to_models = 'default')
-# # Plot best match for each cell_type
-# DimPlot(srat_scannot, group.by = "most_probable_cell_type")
-# 
-# 
-# # Classification Based Cell Type: scPred
-# --------------------------------------------------------------------------------
-#  
-# source(here::here("R_override", "scPredict_edited.R"))
-# devtools::install_github("immunogenomics/harmony")
-# devtools::install_github("powellgenomicslab/scPred")
-# 
-# # Process reference through seurat and scPred
-# ref_data <- scPred::pbmc_1 %>%
-#     NormalizeData() %>% 
-#     FindVariableFeatures() %>% 
-#     ScaleData() %>% 
-#     RunPCA() %>% 
-#     RunUMAP(dims = 1:30)
-# ref_model <- scPred::getFeatureSpace(ref_data, "cell_type")
-# ref_model <- scPred::trainModel(ref_model)
-# 
-# # Visualize Model Data
-# DimPlot(ref_data, group.by = "cell_type", label = TRUE, 
-#         repel = TRUE) + 
-#   ggtitle("scPred:: PBMC_1 Reference")  
-# 
-# # Visualize predicted cell types
-# srat_scpred <- scPredict_edited(srat, ref_model)
-# DimPlot(srat_scpred, group.by = "scpred_prediction", label = TRUE, 
-#         repel = TRUE) + 
-#   ggtitle("Cell Types Predicted by scPred")  
-# 
-# 
-# 
-# 
-# # Cell Classification with SingleR
-# #------------------------------------------------------------------------------
-# # Load dataset of immune cells bulk RNA-seq (platelets not included)
-# ref.se <- celldex::DatabaseImmuneCellExpressionData() 
-# # Label celltypes in our srat dataset
-# pred.hesc <- SingleR::SingleR(test = srat@assays$RNA$counts, ref = ref.se, 
-#                               assay.type.test=1,
-#                      labels = ref.se$label.fine)
-# 
-# # Add labels to metadata in srat object
-# srat@meta.data$singler_cell_types <- pred.hesc$pruned.labels
-# # UMAP Plot of Scitype annotated cells
-# DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE, 
-#         group.by = 'singler_cell_types') + 
-#   ggtitle("SingleR with celldex::ImmuneDataset Ref")  
+# Cell Classification Using scAnnotateR
+#-------------------------------------------------------------------------------
+
+# DEFAULT MODEL: Load classification Models
+default_models <- scAnnotatR::load_models("default")
+
+# Perform classification
+srat_scannot <- classify_cells(classify_obj = srat,
+                             assay = 'RNA', slot = 'counts',
+                             cell_types = "all",
+                             path_to_models = 'default')
+# Plot best match for each cell_type
+DimPlot(srat_scannot, group.by = "most_probable_cell_type")
+
+
+# Classification Based Cell Type: scPred
+--------------------------------------------------------------------------------
+# Load a bugfix version of function into memory  
+source(here::here("R_override", "scPredict_edited.R"))
+
+# Process reference through seurat and scPred
+ref_data <- scPred::pbmc_1 %>%
+    NormalizeData() %>%
+    FindVariableFeatures() %>%
+    ScaleData() %>%
+    RunPCA() %>%
+    RunUMAP(dims = 1:30)
+ref_model <- scPred::getFeatureSpace(ref_data, "cell_type")
+ref_model <- scPred::trainModel(ref_model)
+
+# Visualize Model Data
+DimPlot(ref_data, group.by = "cell_type", label = TRUE,
+        repel = TRUE) +
+  ggtitle("scPred:: PBMC_1 Reference")
+
+# Visualize predicted cell types
+srat_scpred <- scPredict_edited(srat, ref_model)
+DimPlot(srat_scpred, group.by = "scpred_prediction", label = TRUE,
+        repel = TRUE) +
+  ggtitle("Cell Types Predicted by scPred")
+
+
+
+
+# Cell Classification with SingleR
+#------------------------------------------------------------------------------
+# Load dataset of immune cells bulk RNA-seq (platelets not included)
+ref.se <- celldex::DatabaseImmuneCellExpressionData()
+# Label celltypes in our srat dataset
+pred.hesc <- SingleR::SingleR(test = srat@assays$RNA$counts, ref = ref.se,
+                              assay.type.test=1,
+                     labels = ref.se$label.fine)
+
+# Add labels to metadata in srat object
+srat@meta.data$singler_cell_types <- pred.hesc$pruned.labels
+# UMAP Plot of Scitype annotated cells
+DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
+        group.by = 'singler_cell_types') +
+  ggtitle("SingleR with celldex::ImmuneDataset Ref")
+
+
+
+# Differential Gene expression across conditions
+#-------------------------------------------------------------------------------
+# https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
+# We use the simulated integrated dataset we creat previously (randomly 
+# assigning cells between (0) control group and (1) treatment group).
+DefaultAssay(srat_int) <- "RNA"
+
+# UMAP Plot of Scitype annotated cells
+DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
+        group.by = 'cell_type') +
+  ggtitle("SciType Annotated Cells")
+
+
+# Visualize UMAP clusters
+DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
+
+# Identify COnserved markers across conditions
+#-------------------------------------------------------------------------------
+
+class_mon.markers <- FindConservedMarkers(srat_int, ident.1 = 1,   
+                                          grouping.var = "group_id",
+                                          verbose = FALSE)
+head(nk.markers)
+
+
 
 
 
 
 # Monocle3 Pseudotime, tutorial dataset
 #-------------------------------------------------------------------------------
-
-
 # library(dplyr) # imported for some downstream data manipulation
 # devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", force = TRUE, TRUE,dependencies = TRUE)
 # remotes::install_github('satijalab/seurat-wrappers', force = TRUE,dependencies = TRUE)

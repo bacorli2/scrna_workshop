@@ -1,13 +1,16 @@
 
 
 # Base Packages
-base_packages <- c("cli","tidyverse", "BiocManager", "cowplot", "here", "R.utils", "HGNChelper","openxlsx", "devtools","VGAM")
-base_installs <- install.packages(setdiff(base_packages, rownames(installed.packages())), 
+base_packages <- c("cli","tidyverse", "BiocManager", "cowplot", "here", "R.utils",
+                   "HGNChelper","openxlsx", "devtools","VGAM", "metap")
+base_installs <- install.packages(setdiff(base_packages, 
+                                          rownames(installed.packages())), 
                                   dependencies = TRUE)
 # Load all base packages
 base_loads <- lapply(base_packages, library, character.only = TRUE)
 # Bioconductor Packages
-biocm_packages <-  c("BiocParallel", "Seurat", "celldex", "scAnnotatR", "library(scRNAseq)")
+biocm_packages <-  c("BiocParallel", "Seurat", "celldex", "scAnnotatR", 
+                     "scRNAseq", "multtest")
 bioc_installs <- setdiff(biocm_packages, rownames(installed.packages()))
 if (length(bioc_installs)) {BiocManager::install(bioc_installs) }
 # Load all Bioconductor packages
@@ -22,9 +25,20 @@ BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
 
 
 
-# Custom pacakges
-devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", force = TRUE)
+# Monocle 3 Developer Package and Dependencies
+#-------------------------------------------------------------------------------
+devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", 
+                         force = TRUE)
 devtools::install_github('immunogenomics/presto')
+
+
+# scPred Developer Package
+#-------------------------------------------------------------------------------
+# There is an error with scPredict and the github has not been updated in a 
+# while So we load a corrected version of function
+devtools::install_github("immunogenomics/harmony")
+devtools::install_github("powellgenomicslab/scPred")
+
 
 # Set base directory of for workshop
 here::i_am("README.md")
