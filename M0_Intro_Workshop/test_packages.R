@@ -1,7 +1,6 @@
 
 
 library(tidyverse)
-
 library(Seurat)
 library(patchwork)
 library(HGNChelper)
@@ -12,11 +11,12 @@ library(SingleR)
 library(celldex)
 library(monocle3)
 library(SeuratWrappers)
-
 options(ggrepel.max.overlaps = Inf) 
 
 # This code was appropriate from the following sources
 # https://satijalab.org/seurat/articles/pbmc3k_tutorial
+# Package to read in seurat datasets from disk, various formats
+remotes::install_github("mojaveazure/seurat-disk")
 
 # Set wd to base of workshop repository
 here::i_am("README.md")
@@ -65,6 +65,7 @@ VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
 # (poor viability)
 srat <- subset(srat, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & 
                  percent.mt < 5)
+
 
 # Normalize data
 # 1. Normalizes gene expression by the total expression in each cell
@@ -136,6 +137,36 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 
 # FeaturePlot(data, features = c("Pax6",  "Eomes", "Aldh1l1",
 #                                "Tbr1",  "Olig2", "Sox2", "Cux2", "Neurog2"))
+
+
+
+# Dataset Integration (Simulation)
+#-------------------------------------------------------------------------------
+# For illustrative purposes, let's simulate having a cells from two conditions
+# We can combine the data between them
+# 0: control, 1: treatment
+# WE can do this by adding a factor to the seurat metadat
+set.seed(0)
+srat_int <- srat
+srat_int@meta.data$group_id = factor(rbinom(n = ncol(srat_int), size = 1, 
+                                            prob = 0.5 ))
+# Split dataset based on factor column in metadata
+srat_int[["RNA"]] <- split(srat_int[["RNA"]], f = srat_int$group_id)
+
+# Integrate datasets together in seurat object
+srat_int <- 
+  IntegrateLayers(srat_int, method = CCAIntegration, orig.reduction = "pca", 
+                  new.reduction = "integrated.cca", verbose = FALSE)
+
+# re-join layers after integration
+srat_int[["RNA"]] <- JoinLayers(srat_int[["RNA"]])
+# Rerun pipeline
+srat_int <- FindNeighbors(srat_int, dims = 1:10)
+srat_int <- FindClusters(srat_int, resolution = 0.5)
+srat_int <- RunUMAP(srat_int, dims= 1:10)
+# Visualize UMAP clusters
+DimPlot(srat_int, reduction = "umap", label = TRUE, repel = TRUE)
+
 
 
 
