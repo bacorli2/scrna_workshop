@@ -526,46 +526,46 @@ plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
            label_leaves = FALSE, label_branch_points = FALSE, 
            graph_label_size = 1.5, alpha = 0.5)
 
-# 6) Subset cells from a particular trajectory (graph segment)
-cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
-                                 starting_pr_node = "Y_311", 
-                                 ending_pr_nodes = c("Y_324"),
-                                 clear_cds = TRUE) 
-
-# Must repeat processing pipeline on this segment for next analysis
-# 1) normalization and linear dimension reduction
-cds_sub <- preprocess_cds(cds_sub, num_dim = 100, method = "PCA")
-# 2) Nonlinear dimension reduction (UMAP) based on preprocessing
-cds_sub <- reduce_dimension(cds_sub, reduction_method = "UMAP", 
-                            preprocess_method = "PCA")
-# 3) Cluster cells in reduced space
-cds_sub <- cluster_cells(cds_sub)
-# 4) Construct new graph
-cds_sub <- learn_graph(cds_sub)
-# 4A) Color cells in celltype and and label principle points
-plot_cells(cds_sub, color_cells_by = "cell_type", 
-           label_cell_groups = FALSE, label_leaves = TRUE, 
-           label_principal_points = TRUE, alpha = 0.5,
-           graph_label_size = 3)
-
-
-
-# 5) Genes that are associated with the selected trajectory 
-#  (cores = 1) for reproducibility
-subset_pr_test_res <- graph_test(cds_sub, neighbor_graph="principal_graph", 
-                                 cores = 1)
-pr_deg_ids <- row.names(subset(subset_pr_test_res, q_value < 0.05))
-# 6) Group genes into modules to visualize expression trends over pseudotime
-gene_module_df <- find_gene_modules(cds_sub[pr_deg_ids,], resolution = 0.001)
-
-# 7) Order modules by similarity (via hclust) to see which ones activate earlier
-agg_mat <- aggregate_gene_expression(cds_sub, gene_module_df)
-module_dendro <- hclust(dist(agg_mat))
-gene_module_df$module <- factor(gene_module_df$module, 
-                                levels = row.names(agg_mat)
-                                [module_dendro$order])
-
-# Visualize gene module activation over pseudotime
-plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE, 
-           show_trajectory_graph = TRUE)
-
+# # 6) Subset cells from a particular trajectory (graph segment)
+# cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
+#                                  starting_pr_node = "Y_311", 
+#                                  ending_pr_nodes = c("Y_324"),
+#                                  clear_cds = TRUE) 
+# 
+# # Must repeat processing pipeline on this segment for next analysis
+# # 1) normalization and linear dimension reduction
+# cds_sub <- preprocess_cds(cds_sub, num_dim = 100, method = "PCA")
+# # 2) Nonlinear dimension reduction (UMAP) based on preprocessing
+# cds_sub <- reduce_dimension(cds_sub, reduction_method = "UMAP", 
+#                             preprocess_method = "PCA")
+# # 3) Cluster cells in reduced space
+# cds_sub <- cluster_cells(cds_sub)
+# # 4) Construct new graph
+# cds_sub <- learn_graph(cds_sub)
+# # 4A) Color cells in celltype and and label principle points
+# plot_cells(cds_sub, color_cells_by = "cell_type", 
+#            label_cell_groups = FALSE, label_leaves = TRUE, 
+#            label_principal_points = TRUE, alpha = 0.5,
+#            graph_label_size = 3)
+# 
+# 
+# 
+# # 5) Genes that are associated with the selected trajectory 
+# #  (cores = 1) for reproducibility
+# subset_pr_test_res <- graph_test(cds_sub, neighbor_graph="principal_graph", 
+#                                  cores = 1)
+# pr_deg_ids <- row.names(subset(subset_pr_test_res, q_value < 0.05))
+# # 6) Group genes into modules to visualize expression trends over pseudotime
+# gene_module_df <- find_gene_modules(cds_sub[pr_deg_ids,], resolution = 0.001)
+# 
+# # 7) Order modules by similarity (via hclust) to see which ones activate earlier
+# agg_mat <- aggregate_gene_expression(cds_sub, gene_module_df)
+# module_dendro <- hclust(dist(agg_mat))
+# gene_module_df$module <- factor(gene_module_df$module, 
+#                                 levels = row.names(agg_mat)
+#                                 [module_dendro$order])
+# 
+# # Visualize gene module activation over pseudotime
+# plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE, 
+#            show_trajectory_graph = TRUE)
+# 
