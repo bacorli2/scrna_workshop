@@ -161,7 +161,7 @@ srat_int <- RunUMAP(srat_int, dims= 1:10)
 # Visualize UMAP clusters
 DimPlot(srat_int, reduction = "umap", label = TRUE,
         repel = TRUE)
-# OVerwrite seurat object for downstream steps
+# Overwrite seurat object for downstream steps
 srat <- srat_int
 
 
@@ -238,7 +238,6 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 
 # Cell Classification Using scAnnotateR
 #-------------------------------------------------------------------------------
-
 # DEFAULT MODEL: Load classification Models
 default_models <- scAnnotatR::load_models("default")
 
@@ -251,8 +250,9 @@ srat_scannot <- classify_cells(classify_obj = srat,
 DimPlot(srat_scannot, group.by = "most_probable_cell_type")
 
 
+
 # Classification Based Cell Type: scPred
---------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
 # There is an error with scPredict and the github has not been updated in a 
 # while, so we load a corrected version of function into memory.  
 source(here::here("R_override", "scPredict_edited.R"))
@@ -311,7 +311,6 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
         group.by = 'cell_type') +
   ggtitle("SciType Annotated Cells")
 
-
 # Visualize UMAP clusters
 DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 
@@ -321,7 +320,7 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 class_mon.markers <- FindConservedMarkers(srat_int, ident.1 = 1,   
                                           grouping.var = "group_id",
                                           verbose = FALSE)
-head(nk.markers)
+head(class_mon.markers)
 
 
 
@@ -345,6 +344,7 @@ if (!file.exists(celegans_path)) {
     readRDS(url(paste0("https://depts.washington.edu:/trapnell-lab/software/",
                        "monocle3/celegans/data/packer_embryo_rowData.rds")))
   
+  # Save expression data locally
   dir.create(here::here("_temp_data", "celegans_embryo"))
   save(expression_matrix, cell_metadata, gene_annotation,
        file = celegans_path)
@@ -378,7 +378,8 @@ cds <- reduce_dimension(cds, reduction_method = "UMAP", umap.fast_sgd = FALSE,
 
 
 # 2A) Inspection: Visualize cells project onto reduced dimensional space
-plot_cells(cds, label_groups_by_cluster = FALSE,  color_cells_by = "cell.type")
+plot_cells(cds, label_groups_by_cluster = FALSE,  color_cells_by = "cell.type",
+           show_trajectory_graph = FALSE)
 
 # 2B) Inspection: Plot relative gene expression.
 plot_cells(cds, genes=c("che-1", "hlh-17", "nhr-6", "dmd-6","ceh-36", "ham-1"), 
@@ -413,7 +414,7 @@ plot_cells(cds, color_cells_by = "cell.type", label_cell_groups = FALSE,
 
 
 # 5) Order cells in pseudotime from selected principle node(s)
-cds <- order_cells(cds, root_pr_nodes = c("Y_22"))
+cds <- order_cells(cds, root_pr_nodes = c("Y_261"))
 # 5A) visualize pseudotime from root node
 plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
            label_leaves = FALSE, label_branch_points = FALSE, 
@@ -421,8 +422,8 @@ plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
 
 # 6) Subset cells from a particular trajectory (graph segment)
 cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
-                                 starting_pr_node = "Y_22", 
-                                 ending_pr_nodes = c("Y_82"),
+                                 starting_pr_node = "Y_261", 
+                                 ending_pr_nodes = c("Y_319"),
                                  clear_cds = TRUE) 
 
 # Must repeat processing pipeline on this segment for next analysis
@@ -483,6 +484,7 @@ cds <- reduce_dimension(cds, reduction_method = "UMAP", umap.fast_sgd = FALSE,
 
 # Monocle needs partitions as well as clusters
 # Using cluster_method = leiden raises error with Nonsymmetric adjacency matrix
+# cluster_method = c("leiden", "louvain")
 cds <- cluster_cells(cds, reduction_method = "UMAP", k = 20, num_iter = 1,
                      cluster_method = "louvain", partition_qval = 0.05,
                      weight = FALSE, random_seed = 1,  verbose = FALSE)
@@ -514,8 +516,11 @@ plot_cells(cds, color_cells_by = "cell_type", label_cell_groups = FALSE,
            label_leaves = TRUE, label_principal_points = TRUE, 
            graph_label_size = 3, alpha = 0.5)
 
+# NOTE: The node ID will chang between systems, you need to look at the graph 
+# above and change the node id "Y_xxx" and "Y_xxx" in the function calls below.
+
 # 5) Order cells in pseudotime from selected principle node(s)
-cds <- order_cells(cds, root_pr_nodes = c("Y_108"))
+cds <- order_cells(cds, root_pr_nodes = c("Y_311"))
 # 5A) visualize pseudotime from root node
 plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
            label_leaves = FALSE, label_branch_points = FALSE, 
@@ -523,8 +528,8 @@ plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
 
 # 6) Subset cells from a particular trajectory (graph segment)
 cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
-                                 starting_pr_node = "Y_108", 
-                                 ending_pr_nodes = c("Y_125"),
+                                 starting_pr_node = "Y_311", 
+                                 ending_pr_nodes = c("Y_324"),
                                  clear_cds = TRUE) 
 
 # Must repeat processing pipeline on this segment for next analysis

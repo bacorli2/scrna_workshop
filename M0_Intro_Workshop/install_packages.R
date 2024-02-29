@@ -1,5 +1,8 @@
 
 
+# Set current directory to the location of this file
+# In RStudio, Menu >> Session >> Set Workspace Directory >> To Source File Location
+
 # Base Packages
 base_packages <- c("cli","tidyverse", "BiocManager", "cowplot", "here", "R.utils",
                    "HGNChelper","openxlsx", "devtools","VGAM", "metap")
