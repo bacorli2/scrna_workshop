@@ -13,30 +13,25 @@ library(monocle3)
 library(SeuratWrappers)
 options(ggrepel.max.overlaps = Inf) 
 
-# This code was appropriate from the following sources
-# https://satijalab.org/seurat/articles/pbmc3k_tutorial
-# Package to read in seurat datasets from disk, various formats
-remotes::install_github("mojaveazure/seurat-disk")
-
 # Set wd to base of workshop repository
 here::i_am("README.md")
 
 
-# Dataset Importation
+# scRNA-seq Dataset Importation
 #-------------------------------------------------------------------------------
-
 # Example small dataset (real data)
 # Used from this tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial
 # 2,700 single cells that were sequenced on the Illumina NextSeq 500
 # 13,714 genes
 # Download dataset into temp_data, unzip
-if (!file.exists(here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz"))) {
+pbmc3k_path <- here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz")
+if (!file.exists(pbmc3k_path)) {
   dir.create(here::here("_temp_data"))
-  download.file("https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz",
+  download.file(paste0("https://cf.10xgenomics.com/samples/cell/pbmc3k/",
+                       "pbmc3k_filtered_gene_bc_matrices.tar.gz"),
                 destfile = here::here("_temp_data", 
                                       "pbmc3k_filtered_gene_bc_matrices.tar.gz"))
-  untar(here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz"), 
-        exdir = here::here("_temp_data"))
+  untar(pbmc3k_path, exdir = here::here("_temp_data"))
 }
 # Load the srat dataset
 srat.data <- Read10X(data.dir = here::here("_temp_data", 
@@ -144,9 +139,9 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 #-------------------------------------------------------------------------------
 # For illustrative purposes, let's simulate having data from two conditions
 # We can combine the data between them and instruct seurat to normalize the data
-# To make comparsable.
+# To make comparable.
 #  Groups: 0: control, 1: treatment
-# We can do this by adding a factor to the seurat metadat
+# We can do this by adding a factor to the seurat metadata
 set.seed(0)
 srat_int <- srat
 srat_int@meta.data$group_id = factor(rbinom(n = ncol(srat_int), size = 1, 
@@ -258,7 +253,8 @@ DimPlot(srat_scannot, group.by = "most_probable_cell_type")
 
 # Classification Based Cell Type: scPred
 --------------------------------------------------------------------------------
-# Load a bugfix version of function into memory  
+# There is an error with scPredict and the github has not been updated in a 
+# while, so we load a corrected version of function into memory.  
 source(here::here("R_override", "scPredict_edited.R"))
 
 # Process reference through seurat and scPred
@@ -334,19 +330,20 @@ head(nk.markers)
 
 # Monocle3 Pseudotime, tutorial dataset
 #-------------------------------------------------------------------------------
-# library(dplyr) # imported for some downstream data manipulation
-# devtools::install_github('cole-trapnell-lab/monocle3', ref="develop", force = TRUE, TRUE,dependencies = TRUE)
-# remotes::install_github('satijalab/seurat-wrappers', force = TRUE,dependencies = TRUE)
 
 # Example small dataset (real data)
-celegans_path <- here::here("_temp_data", "celegans_embryo", "count_matrix.Rdata")
+celegans_path <- here::here("_temp_data", "celegans_embryo", 
+                            "count_matrix.Rdata")
 if (!file.exists(celegans_path)) {
   expression_matrix <- 
-    readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_expression.rds"))
+    readRDS(url(paste0("https://depts.washington.edu:/trapnell-lab/software/",
+                       "monocle3/celegans/data/packer_embryo_expression.rds")))
   cell_metadata <- 
-    readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_colData.rds"))
+    readRDS(url(paste0("https://depts.washington.edu:/trapnell-lab/software/",
+                       "monocle3/celegans/data/packer_embryo_colData.rds")))
   gene_annotation <- 
-    readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_rowData.rds"))
+    readRDS(url(paste0("https://depts.washington.edu:/trapnell-lab/software/",
+                       "monocle3/celegans/data/packer_embryo_rowData.rds")))
   
   dir.create(here::here("_temp_data", "celegans_embryo"))
   save(expression_matrix, cell_metadata, gene_annotation,
@@ -375,7 +372,7 @@ cds <-
                      " + bg.500.2.loading + bg.r17.loading + bg.b01.loading",
                      " + bg.b02.loading"))
 # 2) Nonlinear dimension reduction (UMAP or tSNE) based on pre-processing
-# umap.fast_sgd: Makes the results reproducible
+# umap.fast_sgd = FALSE: Makes the results reproducible
 cds <- reduce_dimension(cds, reduction_method = "UMAP", umap.fast_sgd = FALSE,
                         preprocess_method = 'PCA', cores = 1)
 
