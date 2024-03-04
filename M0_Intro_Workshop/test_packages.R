@@ -12,6 +12,7 @@ library(celldex)
 library(monocle3)
 library(SeuratWrappers)
 library(cowplot)
+# library(DESeq2)
 options(ggrepel.max.overlaps = Inf) 
 
 # Set wd to base of workshop repository
@@ -338,9 +339,10 @@ DotPlot(srat, features = rev(rownames(class_mon.markers[1:10,])),
   RotatedAxis()
 
 
-# Differential Gene Expression: Option 1
+# Differential Gene Expression: Option 1 (Naive)
 # Subset by each cell_type, find diff markers between conditions
 #-------------------------------------------------------------------------------
+# Caution: With multiple samples, does not control for within sample variation
 # Relabel cell identity label to cell_type (previously was cluster number)
 cell_types <- levels(srat@meta.data$cell_type)
 diff_markers = list()
@@ -351,58 +353,49 @@ for (n in seq_along(cell_types)) {
   Idents(sub_srat) = srat@meta.data$group_id
   diff_markers[[cell_types[n]]] <- 
     FindMarkers(sub_srat, ident.1 = "Ctrl", ident.2 = "Tx", slot = "scale.data")
+  head(diff_markers[[cell_types[n]]], n = 10)
 }
+
+# Visualize diff marker expression with dot plot
+#-------------------------------------------------------------------------------
+Idents(srat) <- srat$cell_type
+DotPlot(srat, features = rev(rownames(diff_markers$`Classical Monocytes`)[1:10]), 
+        cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
+  RotatedAxis()
+
 
 # Differential Gene Expression: Option 2
-# Visualize DGE and qualitatively analyze
 #-------------------------------------------------------------------------------
-# Relabel cell identity label to cell_type (previously was cluster number)
+
+
+
+
+
+
+# Differential Gene Expression: Option 3, Psuedo-bulk analysis
+#-------------------------------------------------------------------------------
 # https://satijalab.org/seurat/articles/de_vignette
-# https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
 
+# Note: only works if tissue acquired from multiple replicates (not the case
+#  with this dataset).So we simulate replicates.
+srat$sample_id <- sample(x = 1:10, size = ncol(srat), replace = TRUE)
 
-theme_set(theme_cowplot())
-# Relabel cell identity label to cell_type (previously was cluster number)
-cell_types <- levels(srat@meta.data$cell_type)
-diff_markers = list()
-for (n in seq_along(cell_types)) {
-  # Isolate cells from first cell type/cluster
-  sub_srat = subset(srat, idents = cell_types[n])
-  # Reassign idents to study group id
-  Idents(sub_srat) = srat@meta.data$group_id
-  diff_markers[[cell_types[n]]] <- 
-    FindMarkers(sub_srat, ident.1 = "Ctrl", ident.2 = "Tx", slot = "scale.data")
-}
+# Perform pseudo bulk, grouping gene expression by cell_type, group_id, 
+#   and donor (can also group by sample/ donor if that exists in dataset)
+pseudo_srat <- AggregateExpression(
+  object = srat, assays = "RNA", return.seurat = T,
+  group.by = c("group_id",  "cell_type", "sample_id"))
+# For pseudo bulk testing we need to group by cell type and study group
+pseudo_srat$celltype.tx <- paste(pseudo_srat$cell_type, 
+                                 pseudo_srat$group_id, sep = "_")
 
-
-
-srat@meta.data$celltype <- srat@meta.data$cell_type
-# Subset cell type
-sub_srat = subset(srat, idents = cell_types[n])
-#  Reassign idents to study group id
-Idents(sub_srat) = srat@meta.data$group_id
-avg.cells <- log1p(AverageExpression(sub_srat, verbose = FALSE)$RNA)
-
-a <- AggregateExpression(object = sub_srat, group.by = c('ident', "cell_type"))$RNA
-
-
-
-t.cells <- subset(immune.combined, idents = "CD4 Naive T")
-Idents(t.cells) <- "stim"
-avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
-avg.t.cells$gene <- rownames(avg.t.cells)
-
-cd14.mono <- subset(immune.combined, idents = "CD14 Mono")
-Idents(cd14.mono) <- "stim"
-avg.cd14.mono <- log1p(AverageExpression(cd14.mono, verbose = FALSE)$RNA)
-avg.cd14.mono$gene <- rownames(avg.cd14.mono)
-
-genes.to.label = c("ISG15", "LY6E", "IFI6", "ISG20", "MX1", "IFIT2", "IFIT1", "CXCL10", "CCL8")
-p1 <- ggplot(avg.t.cells, aes(CTRL, STIM)) + geom_point() + ggtitle("CD4 Naive T Cells")
-p1 <- LabelPoints(plot = p1, points = genes.to.label, repel = TRUE)
-p2 <- ggplot(avg.cd14.mono, aes(CTRL, STIM)) + geom_point() + ggtitle("CD14 Monocytes")
-p2 <- LabelPoints(plot = p2, points = genes.to.label, repel = TRUE)
-plot_grid(p1, p2)
+# Set primrary identify/groups for cells for DGE test
+Idents(pseudo_srat) <- "celltype.tx"
+bulk.mono.de <- FindMarkers(object = pseudo_srat, 
+                            ident.1 = "Classical Monocytes_Ctrl", 
+                            ident.2 = "Classical Monocytes_Tx",
+                            test.use = "DESeq2")
+head(bulk.mono.de, n = 10)
 
 
 
