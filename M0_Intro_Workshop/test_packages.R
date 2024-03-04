@@ -11,6 +11,7 @@ library(SingleR)
 library(celldex)
 library(monocle3)
 library(SeuratWrappers)
+library(cowplot)
 options(ggrepel.max.overlaps = Inf) 
 
 # Set wd to base of workshop repository
@@ -301,7 +302,7 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 
 
 
-# Differential Gene expression across conditions
+# Differential and Conserved Gene expression across conditions
 #-------------------------------------------------------------------------------
 # https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
 # We use the simulated integrated dataset we creat previously (randomly 
@@ -336,26 +337,72 @@ DotPlot(srat, features = rev(rownames(class_mon.markers[1:10,])),
         cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
   RotatedAxis()
 
-# # Differntial Gene Expression Analysis
-# theme_set(theme_cowplot())
-# t.cells <- subset(immune.combined, idents = "CD4 Naive T")
-# Idents(t.cells) <- "stim"
-# avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
-# avg.t.cells$gene <- rownames(avg.t.cells)
-# 
-# cd14.mono <- subset(immune.combined, idents = "CD14 Mono")
-# Idents(cd14.mono) <- "stim"
-# avg.cd14.mono <- log1p(AverageExpression(cd14.mono, verbose = FALSE)$RNA)
-# avg.cd14.mono$gene <- rownames(avg.cd14.mono)
-# 
-# genes.to.label = c("ISG15", "LY6E", "IFI6", "ISG20", "MX1", "IFIT2", "IFIT1", "CXCL10", "CCL8")
-# p1 <- ggplot(avg.t.cells, aes(CTRL, STIM)) + geom_point() + ggtitle("CD4 Naive T Cells")
-# p1 <- LabelPoints(plot = p1, points = genes.to.label, repel = TRUE)
-# p2 <- ggplot(avg.cd14.mono, aes(CTRL, STIM)) + geom_point() + ggtitle("CD14 Monocytes")
-# p2 <- LabelPoints(plot = p2, points = genes.to.label, repel = TRUE)
-# plot_grid(p1, p2)
+
+# Differential Gene Expression: Option 1
+# Subset by each cell_type, find diff markers between conditions
+#-------------------------------------------------------------------------------
+# Relabel cell identity label to cell_type (previously was cluster number)
+cell_types <- levels(srat@meta.data$cell_type)
+diff_markers = list()
+for (n in seq_along(cell_types)) {
+  # Isolate cells from first cell type/cluster
+  sub_srat = subset(srat, idents = cell_types[n])
+  # Reassign idents for finding markers
+  Idents(sub_srat) = srat@meta.data$group_id
+  diff_markers[[cell_types[n]]] <- 
+    FindMarkers(sub_srat, ident.1 = "Ctrl", ident.2 = "Tx", slot = "scale.data")
+}
+
+# Differential Gene Expression: Option 2
+# Visualize DGE and qualitatively analyze
+#-------------------------------------------------------------------------------
+# Relabel cell identity label to cell_type (previously was cluster number)
+# https://satijalab.org/seurat/articles/de_vignette
+# https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
 
 
+theme_set(theme_cowplot())
+# Relabel cell identity label to cell_type (previously was cluster number)
+cell_types <- levels(srat@meta.data$cell_type)
+diff_markers = list()
+for (n in seq_along(cell_types)) {
+  # Isolate cells from first cell type/cluster
+  sub_srat = subset(srat, idents = cell_types[n])
+  # Reassign idents to study group id
+  Idents(sub_srat) = srat@meta.data$group_id
+  diff_markers[[cell_types[n]]] <- 
+    FindMarkers(sub_srat, ident.1 = "Ctrl", ident.2 = "Tx", slot = "scale.data")
+}
+
+
+
+srat@meta.data$celltype <- srat@meta.data$cell_type
+# Subset cell type
+sub_srat = subset(srat, idents = cell_types[n])
+#  Reassign idents to study group id
+Idents(sub_srat) = srat@meta.data$group_id
+avg.cells <- log1p(AverageExpression(sub_srat, verbose = FALSE)$RNA)
+
+a <- AggregateExpression(object = sub_srat, group.by = c('ident', "cell_type"))$RNA
+
+
+
+t.cells <- subset(immune.combined, idents = "CD4 Naive T")
+Idents(t.cells) <- "stim"
+avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
+avg.t.cells$gene <- rownames(avg.t.cells)
+
+cd14.mono <- subset(immune.combined, idents = "CD14 Mono")
+Idents(cd14.mono) <- "stim"
+avg.cd14.mono <- log1p(AverageExpression(cd14.mono, verbose = FALSE)$RNA)
+avg.cd14.mono$gene <- rownames(avg.cd14.mono)
+
+genes.to.label = c("ISG15", "LY6E", "IFI6", "ISG20", "MX1", "IFIT2", "IFIT1", "CXCL10", "CCL8")
+p1 <- ggplot(avg.t.cells, aes(CTRL, STIM)) + geom_point() + ggtitle("CD4 Naive T Cells")
+p1 <- LabelPoints(plot = p1, points = genes.to.label, repel = TRUE)
+p2 <- ggplot(avg.cd14.mono, aes(CTRL, STIM)) + geom_point() + ggtitle("CD14 Monocytes")
+p2 <- LabelPoints(plot = p2, points = genes.to.label, repel = TRUE)
+plot_grid(p1, p2)
 
 
 
