@@ -145,7 +145,7 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 set.seed(0)
 srat_int <- srat
 srat_int@meta.data$group_id = factor(rbinom(n = ncol(srat_int), size = 1, 
-                                            prob = 0.5 ))
+                                            prob = 0.5 ), labels = c("Ctrl","Tx"))
 # Split dataset based on factor column in metadata
 srat_int[["RNA"]] <- split(srat_int[["RNA"]], f = srat_int$group_id)
 # Integrate datasets together in seurat object
@@ -226,9 +226,11 @@ sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) <
 print(sctype_scores[,1:3])
 
 # Add column in seurat metadata for celltype annotation
-srat@meta.data$cell_type <- select(srat@meta.data, "seurat_clusters") %>%
+srat@meta.data$cell_type <- factor(select(srat@meta.data, "seurat_clusters") %>%
   left_join(y = select(sctype_scores, "cluster", "type"),
-            by = join_by(seurat_clusters == cluster)) %>% pull("type")
+            by = join_by(seurat_clusters == cluster)) %>% pull("type"))
+# Relabel cell identity label to cell_type (previously was cluster number)
+Idents(srat) <- srat@meta.data$cell_type
 
 # UMAP Plot of Scitype annotated cells
 DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
@@ -314,13 +316,44 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 # Visualize UMAP clusters
 DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 
-# Identify COnserved markers across conditions
-#-------------------------------------------------------------------------------
 
+# Identify Conserved markers across conditions
+#-------------------------------------------------------------------------------
 class_mon.markers <- FindConservedMarkers(srat_int, ident.1 = 1,   
                                           grouping.var = "group_id",
                                           verbose = FALSE)
 head(class_mon.markers)
+
+# Visualize Top conserved markers for classical monocytes for all clusters
+#-------------------------------------------------------------------------------
+# Minimum cut-off set to 9th quantile
+FeaturePlot(srat, features = rownames(head(class_mon.markers)),
+            min.cutoff = "q9")
+
+# Visualize conserved marker expression with dot plot
+#-------------------------------------------------------------------------------
+DotPlot(srat, features = rev(rownames(class_mon.markers[1:10,])), 
+        cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
+  RotatedAxis()
+
+# # Differntial Gene Expression Analysis
+# theme_set(theme_cowplot())
+# t.cells <- subset(immune.combined, idents = "CD4 Naive T")
+# Idents(t.cells) <- "stim"
+# avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
+# avg.t.cells$gene <- rownames(avg.t.cells)
+# 
+# cd14.mono <- subset(immune.combined, idents = "CD14 Mono")
+# Idents(cd14.mono) <- "stim"
+# avg.cd14.mono <- log1p(AverageExpression(cd14.mono, verbose = FALSE)$RNA)
+# avg.cd14.mono$gene <- rownames(avg.cd14.mono)
+# 
+# genes.to.label = c("ISG15", "LY6E", "IFI6", "ISG20", "MX1", "IFIT2", "IFIT1", "CXCL10", "CCL8")
+# p1 <- ggplot(avg.t.cells, aes(CTRL, STIM)) + geom_point() + ggtitle("CD4 Naive T Cells")
+# p1 <- LabelPoints(plot = p1, points = genes.to.label, repel = TRUE)
+# p2 <- ggplot(avg.cd14.mono, aes(CTRL, STIM)) + geom_point() + ggtitle("CD14 Monocytes")
+# p2 <- LabelPoints(plot = p2, points = genes.to.label, repel = TRUE)
+# plot_grid(p1, p2)
 
 
 
