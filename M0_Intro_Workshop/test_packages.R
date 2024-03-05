@@ -92,7 +92,7 @@ srat <- ScaleData(srat, features = rownames(srat))
 # srat <- ScaleData(srat, vars.to.regress = "percent.mt")
 
  
-# Linear dimension reduction (PCA) #############################################
+## Linear dimension reduction (PCA) ############################################
 #_______________________________________________________________________________
 srat <- RunPCA(srat, features = VariableFeatures(object = srat))
 # Plot commands: VizDimReduction(), DimPlot(), and DimHeatmap()
@@ -106,7 +106,7 @@ DimPlot(srat, reduction = "pca") + NoLegend()
 ElbowPlot(srat)
 
 
-# Clustering ###################################################################
+## Clustering ##################################################################
 #_______________________________________________________________________________
 # Construct a kNN graph based on euclidean distance in a subset of PCA space 
 #  (up to dimensionality chosen).
@@ -303,9 +303,10 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 
 
 
-# Exploratory Analysis (misc extra plots)######################################
+# Exploratory Analysis (misc extra plots)#######################################
 #_______________________________________________________________________________
 # Visualize QC metrics as a violin plot
+Idents(srat) <- "pbmc3k"
 VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
         ncol = 3,  idents = NULL, group.by = NULL,  split.by = NULL,   
         assay = "RNA")
@@ -317,39 +318,42 @@ plot2 <- FeatureScatter(srat, feature1 = "nCount_RNA",
 plot1 + plot2
 
 
-# Plot Variable Features
+# Plot Variable features
 plot1 <- VariableFeaturePlot(srat)
+plot1
+# Label Most variable features
 plot2 <- LabelPoints(plot = plot1, points = head(VariableFeatures(srat), 10), 
                      repel = TRUE)
-plot1 + plot2
+plot2
 
 
-# Visualize PCA Dim Loadings
+# Visualize PCA Dim as scatter plot
 VizDimLoadings(srat, dims = 1:2, reduction = "pca")
 
+# Visualize PCA Dim as heatmap
 DimHeatmap(srat, dims = 1:2, cells = 500, balanced = TRUE)
 
-
-# Visualize Genes in diff clusters
+Idents(srat) <- srat$seurat_clusters
+# Visualize gene expression of Top 2 Variable Genes across clusters
 VlnPlot(srat, features = head(VariableFeatures(srat), 2))
 
-# VIsualize heatmap of genes across clusters
+# Visualize heatmap of genes across clusters
 FeaturePlot(srat, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", 
                                "FCGR3A", "LYZ", "PPBP", "CD8A"))
 
 
-# Show heatmap of gene expression of top markers for each cluster
-# Marker
+# Heatmap of expression of top markers
 top10 <- srat_int.all.markers %>%
   group_by(cluster) %>%
   dplyr::filter(avg_log2FC > 1) %>%
-  slice_head(n = 10) %>%
+  slice_head(n = 5) %>%
   ungroup() 
-DoHeatmap(srat, features = top10$gene) + NoLegend()
+DoHeatmap(srat, features = top10$gene) +
+  NoLegend()
 
 
 
-# Differential and Conserved Gene expression across conditions
+# DGE and Conserved Gene Expression ############################################
 #_______________________________________________________________________________
 # https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
 # We use the simulated integrated dataset we creat previously (randomly 
@@ -372,20 +376,20 @@ conserved_marks <- FindConservedMarkers(srat_int, ident.1 = 1,
                                           verbose = FALSE)
 head(conserved_marks)
 
-## Visualize Top conserved markers for classical monocytes for all clusters ####
+### Visualize Top conserved markers for classical monocytes for all clusters 
 #_______________________________________________________________________________
 # Minimum cut-off set to 9th quantile
 FeaturePlot(srat, features = rownames(head(conserved_marks)),
             min.cutoff = "q9")
 
-## Visualize conserved marker expression with dot plot #########################
+### Visualize conserved marker expression with dot plot 
 #_______________________________________________________________________________
 DotPlot(srat, features = rev(rownames(conserved_marks[1:10,])), 
         cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
   RotatedAxis()
 
 
-## Differential Gene Expression: Option 1 (Naive) ##############################
+## Differential Gene Expression: Option 1 (Naive) 
 # Subset by each cell_type, find diff markers between conditions
 #_______________________________________________________________________________
 # Caution: With multiple samples, does not control for within sample variation
@@ -402,7 +406,7 @@ for (n in seq_along(cell_types)) {
   head(diff_markers[[cell_types[n]]], n = 10)
 }
 
-## Visualize diff marker expression with dot plot ##############################
+### Visualize diff marker expression with dot plot #############################
 #_______________________________________________________________________________
 Idents(srat) <- srat$cell_type
 DotPlot(srat, features = rev(rownames(diff_markers$`Classical Monocytes`)[1:10]), 
