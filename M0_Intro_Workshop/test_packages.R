@@ -303,6 +303,11 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 
 
 
+
+
+
+
+
 # Differential and Conserved Gene expression across conditions
 #-------------------------------------------------------------------------------
 # https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
@@ -321,20 +326,20 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 
 # Identify Conserved markers across conditions
 #-------------------------------------------------------------------------------
-class_mon.markers <- FindConservedMarkers(srat_int, ident.1 = 1,   
+conserved_marks <- FindConservedMarkers(srat_int, ident.1 = 1,   
                                           grouping.var = "group_id",
                                           verbose = FALSE)
-head(class_mon.markers)
+head(conserved_marks)
 
 # Visualize Top conserved markers for classical monocytes for all clusters
 #-------------------------------------------------------------------------------
 # Minimum cut-off set to 9th quantile
-FeaturePlot(srat, features = rownames(head(class_mon.markers)),
+FeaturePlot(srat, features = rownames(head(conserved_marks)),
             min.cutoff = "q9")
 
 # Visualize conserved marker expression with dot plot
 #-------------------------------------------------------------------------------
-DotPlot(srat, features = rev(rownames(class_mon.markers[1:10,])), 
+DotPlot(srat, features = rev(rownames(conserved_marks[1:10,])), 
         cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
   RotatedAxis()
 
@@ -396,6 +401,14 @@ bulk.mono.de <- FindMarkers(object = pseudo_srat,
                             ident.2 = "Classical Monocytes_Tx",
                             test.use = "DESeq2")
 head(bulk.mono.de, n = 10)
+
+
+# Visualize differentially expressed markers from pseudobulk analysis
+#-------------------------------------------------------------------------------
+Idents(srat) <- srat$cell_type
+DotPlot(srat, features = rev(rownames(bulk.mono.de)[1:10]), 
+        cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
+  RotatedAxis()
 
 
 
