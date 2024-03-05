@@ -168,6 +168,7 @@ srat <- srat_int
 
 
 
+
 # Cluster Marker Identification
 #-------------------------------------------------------------------------------
 
@@ -175,8 +176,6 @@ srat <- srat_int
 # Test used is non-parametric Wilcoxon rank sum test
 # Note: Install presto package for much faster results
 srat_int.all.markers <- FindAllMarkers(srat_int, only.pos = TRUE)
-
-
 
 
 # Cell Type Annotation: Scitype
@@ -306,6 +305,51 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 
 
 
+# Exploratory Analysis (misc extra plots)
+#-------------------------------------------------------------------------------
+
+# Visualize QC metrics as a violin plot
+VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
+        ncol = 3,  idents = NULL, group.by = NULL,  split.by = NULL,   
+        assay = "RNA")
+# Compare QC features pairwise
+plot1 <- FeatureScatter(srat, feature1 = "nCount_RNA", 
+                        feature2 = "percent.mt")
+plot2 <- FeatureScatter(srat, feature1 = "nCount_RNA", 
+                        feature2 = "nFeature_RNA")
+plot1 + plot2
+
+
+# Plot Variable Features
+plot1 <- VariableFeaturePlot(srat)
+plot2 <- LabelPoints(plot = plot1, points = head(VariableFeatures(srat), 10), 
+                     repel = TRUE)
+plot1 + plot2
+
+
+# Visualize PCA Dim Loadings
+VizDimLoadings(srat, dims = 1:2, reduction = "pca")
+
+DimHeatmap(srat, dims = 1:2, cells = 500, balanced = TRUE)
+
+
+# Visualize Genes in diff clusters
+VlnPlot(srat, features = head(VariableFeatures(srat), 2))
+
+# VIsualize heatmap of genes across clusters
+FeaturePlot(srat, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", 
+                               "FCGR3A", "LYZ", "PPBP", "CD8A"))
+
+
+# Show heatmap of gene expression of top markers for each cluster
+# Marker
+top10 <- srat_int.all.markers %>%
+  group_by(cluster) %>%
+  dplyr::filter(avg_log2FC > 1) %>%
+  slice_head(n = 10) %>%
+  ungroup() 
+DoHeatmap(srat, features = top10$gene) + NoLegend()
+
 
 
 # Differential and Conserved Gene expression across conditions
@@ -367,11 +411,6 @@ Idents(srat) <- srat$cell_type
 DotPlot(srat, features = rev(rownames(diff_markers$`Classical Monocytes`)[1:10]), 
         cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
   RotatedAxis()
-
-
-# Differential Gene Expression: Option 2
-#-------------------------------------------------------------------------------
-
 
 
 
