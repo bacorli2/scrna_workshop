@@ -19,8 +19,8 @@ options(ggrepel.max.overlaps = Inf)
 here::i_am("README.md")
 
 
-# scRNA-seq Dataset Importation
-#-------------------------------------------------------------------------------
+# scRNA-seq Dataset Importation ################################################
+#_______________________________________________________________________________
 # Example small dataset (real data)
 # Used from this tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial
 # 2,700 single cells that were sequenced on the Illumina NextSeq 500
@@ -55,7 +55,7 @@ srat[["percent.mt"]] <- PercentageFeatureSet(srat, pattern = "^MT-")
 VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
         ncol = 3)
 
-# Filter poor quality cells
+## Filter poor quality cells ###################################################
 # nFeature_RNA > 200: removes empty droplets or cells with little RNA
 # nFeature_RNA < 25000: remove doublets (droplets with 2+ cells)
 # percent.mt < 5: removes cells with over 5% mitochondrial DNA 
@@ -64,7 +64,7 @@ srat <- subset(srat, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 &
                  percent.mt < 5)
 
 
-# Normalize data
+## Normalize data ##############################################################
 # 1. Normalizes gene expression by the total expression in each cell
 # 2. Multiplies this by a scale factor (10,000 by default)
 # 3. Log-transforms the result.
@@ -72,17 +72,17 @@ srat <- subset(srat, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 &
 srat <- NormalizeData(srat, normalization.method = "LogNormalize", 
                       scale.factor = 10000)
 
-# Feature Selection
+## Feature Selection ###########################################################
 # Identify highly variables genes, (to be used for dimension reduction)
 srat <- FindVariableFeatures(srat, selection.method = "vst", nfeatures = 2000)
 
-# Scale the data (across cells, only selected variable features)
+## Scale the data (across cells, only selected variable features) ##############
 # Essentially converts gene expression to z-score (normalize by mean and std 
 # across cells)
 # Stored in: srat[["RNA"]]$scale.data
 srat <- ScaleData(srat, features = rownames(srat))
 
-# Scale data can also be used to remove unwanted cell cycle variation
+## Scale data can also be used to remove unwanted cell cycle variation #########
 # However, this is a more advance method, and it is recommended to use the new
 # Seurat workflow: SCTransform(). 
 # Paper: https://genomebiology.biomedcentral.com/articles/10.1186/
@@ -90,9 +90,9 @@ srat <- ScaleData(srat, features = rownames(srat))
 # Vignette: https://satijalab.org/seurat/articles/sctransform_vignette
 # srat <- ScaleData(srat, vars.to.regress = "percent.mt")
 
-
-# Linear dimension reduction (PCA)
-#-------------------------------------------------------------------------------
+ 
+# Linear dimension reduction (PCA) #############################################
+#_______________________________________________________________________________
 srat <- RunPCA(srat, features = VariableFeatures(object = srat))
 # Plot commands: VizDimReduction(), DimPlot(), and DimHeatmap()
 VizDimLoadings(srat, dims = 1:2, reduction = "pca")     
@@ -105,8 +105,8 @@ DimPlot(srat, reduction = "pca") + NoLegend()
 ElbowPlot(srat)
 
 
-# Clustering
-#-------------------------------------------------------------------------------
+# Clustering ###################################################################
+#_______________________________________________________________________________
 # Construct a kNN graph based on euclidean distance in a subset of PCA space 
 #  (up to dimensionality chosen).
 # Refine edge weights between pairs of cells based on their shared overlap and 
@@ -137,8 +137,8 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 
 
 
-# Dataset Integration (Simulated)
-#-------------------------------------------------------------------------------
+# Dataset Integration (Simulated) ##############################################
+#_______________________________________________________________________________
 # For illustrative purposes, let's simulate having data from two conditions
 # We can combine the data between them and instruct seurat to normalize the data
 # To make comparable.
@@ -169,8 +169,8 @@ srat <- srat_int
 
 
 
-# Cluster Marker Identification
-#-------------------------------------------------------------------------------
+# Cluster Marker Identification ################################################
+#_______________________________________________________________________________
 
 # Find differentially expressed genes in each cluster vs. all other clusters
 # Test used is non-parametric Wilcoxon rank sum test
@@ -178,8 +178,8 @@ srat <- srat_int
 srat_int.all.markers <- FindAllMarkers(srat_int, only.pos = TRUE)
 
 
-# Cell Type Annotation: Scitype
-#-------------------------------------------------------------------------------
+## Cell Type Annotation: Scitype ###############################################
+#_______________________________________________________________________________
 #https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
 # Load gene set and cell type annotation functions into memory
 source(paste0("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/",
@@ -239,8 +239,8 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
   ggtitle("SciType Annotated Cells")
 
 
-# Cell Classification Using scAnnotateR
-#-------------------------------------------------------------------------------
+## Cell Classification Using scAnnotateR #######################################
+#_______________________________________________________________________________
 # DEFAULT MODEL: Load classification Models
 default_models <- scAnnotatR::load_models("default")
 
@@ -254,8 +254,8 @@ DimPlot(srat_scannot, group.by = "most_probable_cell_type")
 
 
 
-# Classification Based Cell Type: scPred
-#--------------------------------------------------------------------------------
+## Classification Based Cell Type: scPred ######################################
+#_______________________________________________________________________________
 # There is an error with scPredict and the github has not been updated in a 
 # while, so we load a corrected version of function into memory.  
 source(here::here("R_override", "scPredict_edited.R"))
@@ -284,8 +284,8 @@ DimPlot(srat_scpred, group.by = "scpred_prediction", label = TRUE,
 
 
 
-# Cell Classification with SingleR
-#------------------------------------------------------------------------------
+## Cell Classification with SingleR#############################################
+#_______________________________________________________________________________
 # Load dataset of immune cells bulk RNA-seq (platelets not included)
 ref.se <- celldex::DatabaseImmuneCellExpressionData()
 # Label celltypes in our srat dataset
@@ -302,12 +302,8 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 
 
 
-
-
-
-# Exploratory Analysis (misc extra plots)
-#-------------------------------------------------------------------------------
-
+# Exploratory Analysis (misc extra plots)######################################
+#_______________________________________________________________________________
 # Visualize QC metrics as a violin plot
 VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
         ncol = 3,  idents = NULL, group.by = NULL,  split.by = NULL,   
@@ -353,7 +349,7 @@ DoHeatmap(srat, features = top10$gene) + NoLegend()
 
 
 # Differential and Conserved Gene expression across conditions
-#-------------------------------------------------------------------------------
+#_______________________________________________________________________________
 # https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
 # We use the simulated integrated dataset we creat previously (randomly 
 # assigning cells between (0) control group and (1) treatment group).
@@ -368,29 +364,29 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE,
 DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 
 
-# Identify Conserved markers across conditions
-#-------------------------------------------------------------------------------
+## Identify Conserved markers across conditions ################################
+#_______________________________________________________________________________
 conserved_marks <- FindConservedMarkers(srat_int, ident.1 = 1,   
                                           grouping.var = "group_id",
                                           verbose = FALSE)
 head(conserved_marks)
 
-# Visualize Top conserved markers for classical monocytes for all clusters
-#-------------------------------------------------------------------------------
+## Visualize Top conserved markers for classical monocytes for all clusters ####
+#_______________________________________________________________________________
 # Minimum cut-off set to 9th quantile
 FeaturePlot(srat, features = rownames(head(conserved_marks)),
             min.cutoff = "q9")
 
-# Visualize conserved marker expression with dot plot
-#-------------------------------------------------------------------------------
+## Visualize conserved marker expression with dot plot #########################
+#_______________________________________________________________________________
 DotPlot(srat, features = rev(rownames(conserved_marks[1:10,])), 
         cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
   RotatedAxis()
 
 
-# Differential Gene Expression: Option 1 (Naive)
+## Differential Gene Expression: Option 1 (Naive) ##############################
 # Subset by each cell_type, find diff markers between conditions
-#-------------------------------------------------------------------------------
+#_______________________________________________________________________________
 # Caution: With multiple samples, does not control for within sample variation
 # Relabel cell identity label to cell_type (previously was cluster number)
 cell_types <- levels(srat@meta.data$cell_type)
@@ -405,19 +401,42 @@ for (n in seq_along(cell_types)) {
   head(diff_markers[[cell_types[n]]], n = 10)
 }
 
-# Visualize diff marker expression with dot plot
-#-------------------------------------------------------------------------------
+## Visualize diff marker expression with dot plot ##############################
+#_______________________________________________________________________________
 Idents(srat) <- srat$cell_type
 DotPlot(srat, features = rev(rownames(diff_markers$`Classical Monocytes`)[1:10]), 
         cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
   RotatedAxis()
 
+# Option 2: Visualize Differnetially Expressed Genes
+
+# celltypes <- levels(Idents(srat))
+# for (n in seq_along(celltypes)) {
+#   sub_srat <- subset(srat, idents = celltypes[n])
+#   Idents(sub_srat) <- "stim"
+#   avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
+#   avg.t.cells$gene <- rownames(avg.t.cells)
+#   
+# }
+
+
+# Heatmap of gene expression between study groups across all cell types 
+FeaturePlot(srat, features = c("LYZ", "ISG15"), 
+            split.by = "group_id", max.cutoff = 3, 
+            cols = c("grey", "red"))
+
+
+# Visualize expression between study groups across all cell types
+plots <- VlnPlot(srat, features = c("LYZ", "ISG15"), split.by = "group_id", 
+                 group.by = "cell_type", pt.size = 0, combine = FALSE, 
+                 split.plot = FALSE)
+wrap_plots(plots = plots, ncol = 1)
 
 
 
 
-# Differential Gene Expression: Option 3, Psuedo-bulk analysis
-#-------------------------------------------------------------------------------
+## Differential Gene Expression: Option 3, Psuedo-bulk analysis ################
+#_______________________________________________________________________________
 # https://satijalab.org/seurat/articles/de_vignette
 
 # Note: only works if tissue acquired from multiple replicates (not the case
@@ -442,8 +461,8 @@ bulk.mono.de <- FindMarkers(object = pseudo_srat,
 head(bulk.mono.de, n = 10)
 
 
-# Visualize differentially expressed markers from pseudobulk analysis
-#-------------------------------------------------------------------------------
+### Visualize differentially expressed markers from pseudobulk analysis ########
+#_______________________________________________________________________________
 Idents(srat) <- srat$cell_type
 DotPlot(srat, features = rev(rownames(bulk.mono.de)[1:10]), 
         cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
@@ -452,8 +471,8 @@ DotPlot(srat, features = rev(rownames(bulk.mono.de)[1:10]),
 
 
 
-# Monocle3 Pseudotime, tutorial dataset
-#-------------------------------------------------------------------------------
+# Monocle3 Pseudotime, tutorial dataset ########################################
+#_______________________________________________________________________________
 
 # Example small dataset (real data)
 celegans_path <- here::here("_temp_data", "celegans_embryo", 
@@ -592,8 +611,8 @@ plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE,
 
 
 
-# Monocle with PBMC3K Dataset, Seurat Bridged
-#-------------------------------------------------------------------------------
+## Monocle with PBMC3K Dataset, Seurat Bridged #################################
+#_______________________________________________________________________________
 
 # Convert seurat object to monocle with wrapper (srat object from beginning)
 cds <- SeuratWrappers::as.cell_data_set(srat)
