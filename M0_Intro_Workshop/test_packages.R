@@ -12,6 +12,7 @@ library(celldex)
 library(monocle3)
 library(SeuratWrappers)
 library(cowplot)
+require(DESeq2)
 # library(DESeq2)
 options(ggrepel.max.overlaps = Inf) 
 
