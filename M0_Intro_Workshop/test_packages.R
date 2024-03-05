@@ -343,12 +343,12 @@ FeaturePlot(srat, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A",
 
 
 # Heatmap of expression of top markers
-top10 <- srat_int.all.markers %>%
+topn <- srat_int.all.markers %>%
   group_by(cluster) %>%
   dplyr::filter(avg_log2FC > 1) %>%
   slice_head(n = 5) %>%
   ungroup() 
-DoHeatmap(srat, features = top10$gene) +
+DoHeatmap(srat, features = topn$gene) +
   NoLegend()
 
 
