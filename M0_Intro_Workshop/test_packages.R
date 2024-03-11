@@ -179,7 +179,7 @@ srat <- srat_int
 srat_int.all.markers <- FindAllMarkers(srat_int, only.pos = TRUE)
 
 
-## Cell Type Annotation: Scitype ###############################################
+## Cell Type Annotation: ScType ###############################################
 #_______________________________________________________________________________
 #https://github.com/IanevskiAleksandr/sc-type/blob/master/README.md
 # Load gene set and cell type annotation functions into memory
@@ -616,7 +616,7 @@ plot_cells(cds_sub, genes=gene_module_df, label_cell_groups = TRUE,
 
 
 
-## Monocle with PBMC3K Dataset, Seurat Bridged #################################
+# Monocle with PBMC3K Dataset, Seurat Bridged #################################
 #_______________________________________________________________________________
 
 # Convert seurat object to monocle with wrapper (srat object from beginning)
