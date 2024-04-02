@@ -18,23 +18,20 @@ options(ggrepel.max.overlaps = Inf)
 
 # Set wd to base of workshop repository
 here::i_am("README.md")
-
-
 source(here::here("R_override", "scType_SeuratObj.R"))
+
 # 10X Dataset Importation ################################################
 #_______________________________________________________________________________
 
 pca_dims <- 1:20
 
-data_paths = c("Subsampling_D5", "Subsampling_D10")
+data_paths = c("Day_5", "Day_10")
 srat_list = list()
 for (n in 1:2) {
-  data_10x <- Read10X(data.dir = here::here("_temp_data", "Subsampling_D5"))
-  srat_list[[n]]<- CreateSeuratObject(counts = data_10x, project = "zebra", 
+  data_10x <- Read10X(data.dir = here::here("_temp_data", "HDA5", data_paths[[n]]))
+  srat_list[[n]] <- CreateSeuratObject(counts = data_10x, project = "zebra", 
                                       min.cells = 3, min.features = 200)
 }
-srat_list[[1]]$Method = "5"
-srat_list[[2]]$Method = "10"
 
 
 # Seurat Merge, Initial Processing #############################################
