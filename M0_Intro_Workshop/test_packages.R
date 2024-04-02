@@ -41,8 +41,8 @@ srat.data <- Read10X(data.dir = here::here("_temp_data",
                                            "filtered_gene_bc_matrices/hg19"))
 
 # Initialize the Seurat object with the raw count matrix (non-normalized data).
-# Include genes that are found within at least 3 cells
-# Include cells that have at least 200 genes
+# min:cells: include genes that are found within at least 3 cells
+# min.features: include cells that have at least 200 genes
 srat <- CreateSeuratObject(counts = srat.data, project = "pbmc3k", 
                            min.cells = 3, min.features = 200)
 
