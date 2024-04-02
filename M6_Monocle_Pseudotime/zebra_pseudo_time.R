@@ -28,9 +28,14 @@ pca_dims <- 1:20
 data_paths = c("Day_5", "Day_10")
 srat_list = list()
 for (n in 1:2) {
+  # Load count, cell, and gene data files
   data_10x <- Read10X(data.dir = here::here("_temp_data", "HDA5", data_paths[[n]]))
   srat_list[[n]] <- CreateSeuratObject(counts = data_10x, project = "zebra", 
                                       min.cells = 3, min.features = 200)
+  # Add additional cell type labels
+  meta.data <- read.csv(here::here("_temp_data/HDA5/", data_paths[[n]], "metadata.csv"))
+  srat_list[[n]] <- AddMetaData(srat_list[[n]], meta.data)
+  
 }
 
 
@@ -142,8 +147,8 @@ plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
 
 # 6) Subset cells from a particular trajectory (graph segment)
 cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
-                                 starting_pr_node = "Y_91", 
-                                 ending_pr_nodes = c("Y_90", "Y_97","Y_107"),
+                                 starting_pr_node = "Y_411", 
+                                 ending_pr_nodes = c("Y_364"),
                                  clear_cds = FALSE) 
 
 
@@ -170,7 +175,7 @@ pr_deg_ids <- row.names(subset(subset_pr_test_res, q_value < 0.05))
 
 # 6) Group genes into modules to visualize expression trends over pseudotime
 cds_sub <- preprocess_cds(cds_sub, num_dim = 15)
-gene_module_df <- find_gene_modules(cds_sub2[pr_deg_ids,])
+gene_module_df <- find_gene_modules(cds_sub[pr_deg_ids,])
 
 # 7) Order modules by similarity (via hclust) to see which ones activate earlier
 agg_mat <- aggregate_gene_expression(cds_sub, gene_module_df)
@@ -180,7 +185,7 @@ gene_module_df$module <- factor(gene_module_df$module,
                                 [module_dendro$order])
 
 # Visualize gene module activation over pseudotime
-rowData(cds)$gene_short_name <- rowData(cds)$gene_name
+# rowData(cds_sub)$gene_short_name <- rowData(cds)$gene_name
 plot_cells(cds_sub, genes=gene_module_df)
 
 
