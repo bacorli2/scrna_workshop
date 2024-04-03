@@ -9,7 +9,7 @@ Dr. Allison Dickey, Research Bioinformtician
 **Target Audience**: Biologists, bioinformaticians, and researchers interested in single-cell RNA sequencing data analysis. 
 <br/>  
   
-**Format:** single day workshop, 8 hours run time, remote and on-site.
+**Format:** single day workshop, on-site.
 <br/>  
   
 **Prerequisites:**
@@ -21,7 +21,7 @@ Dr. Allison Dickey, Research Bioinformtician
 
 **Learning Materials**
 1. Powerpoint presentations.
-2. R and Python scripts and code snippets.
+2. R scripts and code snippets.
 3. Example datasets for hands-on analysis.
 4. Recommended reading materials and online resources.
 <br/>
@@ -52,21 +52,21 @@ Dr. Allison Dickey, Research Bioinformtician
 **Module 3:** Data processing using Seurat
 1. Introduction to Seurat: an R toolkit for single-cell genomics.
 2. Data normalization and structure of S4 class Seurat object.
-3. Horizontal and vertical integration of scRNA datasets.
+3. Integration of scRNA datasets.
 4. Linear and non-linear dimension reductions.
 <br/>  
 
-**Module 4:** Exploratory Data Analysis with Seurat (R)
-1. Dimensionality reduction techniques (PCA, t-SNE, UMAP).
-2. Visualization of scRNA-seq data using Seurat.
+**Module 4:** Cell Type Identification and Clustering with Seurat
+1. Visualization of scRNA-seq data using Seurat. 
+2. Marker based cell identification using Seurat and SingleR.
 <br/>
 
-**Module 5:** Cell Type Identification and Clustering with Seurat
-1. Marker based cell identification using Seurat and SingleR.
-2. Atlast based cell identification.
+**Module 5:** Differential Expression Analysis with Seurat
+1. Statistical methods for identifying differentially expressed genes using Seurat.
+2. Visualizing and interpreting differential expression results.
 <br/>
 
-**Module 6:** Differential Expression Analysis with Seurat
+**Module 6:** Monocle
 1. Statistical methods for identifying differentially expressed genes using Seurat.
 2. Visualizing and interpreting differential expression results.
 3. Accounting for batch effects in differential expression analysis.
@@ -77,15 +77,3 @@ Dr. Allison Dickey, Research Bioinformtician
 2. Troubleshooting and common challenges.
 3. Recommendation for reproducible and accessible data analysis pipelines.
 <br/>
-
-**Module 8:** Q&A and Wrap-Up
-1. Open discussion and Q&A session.
-2. Summary of key concepts and take-home messages.
-<br/>
-
-
-
-_Evaluation:_ Participants will be evaluated based on their engagement in the hands-on sessions, participation in discussions, and completion of assigned exercises.
-<br/>
-
-**Certificate of Completion:** Participants who successfully complete the course will receive a certificate of completion.
