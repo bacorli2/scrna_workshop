@@ -15,7 +15,7 @@
 
 
 # Install package maanager for bio-conductor
-install.packages("BiocManager")
+if (!require("BiocManager", quietly = TRUE)) {install.packages("BiocManager") }
 
 
 # Check that bioc manager is up-to date.
@@ -36,10 +36,6 @@ base_packages <- c("cli","tidyverse", "BiocManager", "cowplot", "here", "R.utils
 base_installs <- install.packages(setdiff(base_packages, 
                                           rownames(installed.packages())), 
                                   dependencies = TRUE)
-# Load all base packages
-base_loads <- lapply(base_packages, library, character.only = TRUE)
-
-
 
 
 # Bioconductor Packages
@@ -50,9 +46,6 @@ biocm_packages <-  c("BiocParallel", "Seurat", "celldex", "scAnnotatR",
                      "scRNAseq", "multtest", "SingleR", "DESeq2")
 bioc_installs <- setdiff(biocm_packages, rownames(installed.packages()))
 if (length(bioc_installs)) {BiocManager::install(bioc_installs) }
-# Load all Bioconductor packages
-bioc_loads <- lapply(biocm_packages, library, character.only = TRUE)
-
 
 
 # Biocmanager will check if any packages will need to be updates
@@ -60,6 +53,15 @@ bioc_loads <- lapply(biocm_packages, library, character.only = TRUE)
 # and run the console
 BiocManager::valid()
 
+
+# Loading Base and Bioconductor packages
+#-------------------------------------------------------------------------------
+
+# Load all base packages
+base_loads <- lapply(base_packages, library, character.only = TRUE)
+
+# Load all Bioconductor packages
+bioc_loads <- lapply(biocm_packages, library, character.only = TRUE)
 
 # Installing from Github
 #-------------------------------------------------------------------------------
@@ -73,6 +75,8 @@ BiocManager::valid()
 # https://emilyriederer.github.io/projmgr/articles/github-pat.html
 
 
+
+
 # Seurat support packages
 #-------------------------------------------------------------------------------
 remotes::install_github("mojaveazure/seurat-disk")
@@ -82,11 +86,15 @@ remotes::install_github("satijalab/seurat-wrappers")
 # Monocle 3 Developer Package and Dependencies
 #-------------------------------------------------------------------------------
 # Install github released version of monocle3 then supporting packages
-devtools::install_github('cole-trapnell-lab/monocle3')
 BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
                        'limma', 'lme4', 'S4Vectors', 'SingleCellExperiment',
                        'SummarizedExperiment', 'batchelor', 'HDF5Array',
                        'terra', 'ggrastr', "qlcMatrix"))
+# qlcMatrix may not be available for latest version of R
+devtools::install_github("cysouw/qlcMatrix")
+
+devtools::install_github('cole-trapnell-lab/monocle3')
+
 # Then install github developer release second
 devtools::install_github('cole-trapnell-lab/monocle3', ref="develop")
 # Presto is used for accelerating cluster marker identification
