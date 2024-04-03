@@ -4,7 +4,7 @@
 
 **Instructors:**  
 Dr. Bruce Corliss, Research Bioinformtician  
-Dr. Allison Dickey, Research Bioinformtician  
+Dr. Allison Dickey, Research Associate  
 
 **Target Audience**: Biologists, bioinformaticians, and researchers interested in single-cell RNA sequencing data analysis. 
 <br/>  
@@ -31,8 +31,8 @@ Dr. Allison Dickey, Research Bioinformtician
   
 **Module 0: Course Preparation and Introduction**
 1. Preparation  
-  a. Software installation and setup (instructions found [here]).  
-  b. Download datasets (see datasets page).  
+  a. Software installation and setup 
+  b. Download datasets 
   c. Test scripts to verify functionality (run scripts found M0 folder).  
 2. Instructor Introductions  
 3. Summary of Syllabus and Learning Objectives    
@@ -67,9 +67,8 @@ Dr. Allison Dickey, Research Bioinformtician
 <br/>
 
 **Module 6:** Monocle
-1. Statistical methods for identifying differentially expressed genes using Seurat.
-2. Visualizing and interpreting differential expression results.
-3. Accounting for batch effects in differential expression analysis.
+1. Discussion of pseudotime analysis
+2. Monocle3 pipeline
 <br/>
 
 **Module 7:** Best Practices and Troubleshooting
