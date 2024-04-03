@@ -3,7 +3,7 @@
 **Course Overview**: This one-day short course is designed to provide participants with practical skills in bioinformatics and statistical methods for the analysis of single-cell RNA sequencing (scRNA-seq) data. The course will cover key steps in scRNA-seq analysis using popular software packages, with a focus on data preprocessing, quality control, dimensionality reduction, clustering, and differential expression analysis.
 
 **Instructors:**  
-Dr. Bruce Corliss, Research Bioinformtician  
+Dr. Bruce Corliss, Research Bioinformatician  
 Dr. Allison Dickey, Research Associate  
 
 **Target Audience**: Biologists, bioinformaticians, and researchers interested in single-cell RNA sequencing data analysis. 
