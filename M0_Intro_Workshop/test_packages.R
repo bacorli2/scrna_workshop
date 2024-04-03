@@ -419,7 +419,7 @@ cell_types <- levels(srat@meta.data$cell_type)
 diff_markers = list()
 for (n in seq_along(cell_types)) {
   # Isolate cells from first cell type/cluster
-  sub_srat = subset(srat, idents = cell_types[n])
+  sub_srat = subset(srat, cell_type == cell_types[n])
   # Reassign idents for finding markers
   Idents(sub_srat) = srat@meta.data$group_id
   diff_markers[[cell_types[n]]] <- 
@@ -427,36 +427,35 @@ for (n in seq_along(cell_types)) {
   head(diff_markers[[cell_types[n]]], n = 10)
 }
 
-### Visualize diff marker expression with dot plot #############################
-#_______________________________________________________________________________
+# Visualize diff marker expression with dot plot 
 Idents(srat) <- srat$cell_type
 DotPlot(srat, features = rev(rownames(diff_markers$`Classical Monocytes`)[1:10]), 
         cols = c("blue", "red"), dot.scale = 8,  split.by = "group_id") + 
   RotatedAxis()
 
-# Option 2: Visualize Differential Expressed Genes
 
+## Option 2: Visualize Differential Expressed Genes ############################
+#_______________________________________________________________________________
 # celltypes <- levels(Idents(srat))
 # for (n in seq_along(celltypes)) {
 #   sub_srat <- subset(srat, idents = celltypes[n])
 #   Idents(sub_srat) <- "stim"
 #   avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
 #   avg.t.cells$gene <- rownames(avg.t.cells)
-#   
+# 
 # }
-
-
-# Heatmap of gene expression between study groups across all cell types 
-FeaturePlot(srat, features = c("LYZ", "ISG15"), 
-            split.by = "group_id", max.cutoff = 3, 
-            cols = c("grey", "red"))
-
-
-# Visualize expression between study groups across all cell types
-plots <- VlnPlot(srat, features = c("LYZ", "ISG15"), split.by = "group_id", 
-                 group.by = "cell_type", pt.size = 0, combine = FALSE, 
-                 split.plot = FALSE)
-wrap_plots(plots = plots, ncol = 1)
+# 
+# # Heatmap of gene expression between study groups across all cell types 
+# FeaturePlot(srat, features = c("LYZ", "ISG15"), 
+#             split.by = "group_id", max.cutoff = 3, 
+#             cols = c("grey", "red"))
+# 
+# 
+# # Visualize expression between study groups across all cell types
+# plots <- VlnPlot(srat, features = c("LYZ", "ISG15"), split.by = "group_id", 
+#                  group.by = "cell_type", pt.size = 0, combine = FALSE, 
+#                  split.plot = FALSE)
+# wrap_plots(plots = plots, ncol = 1)
 
 
 
