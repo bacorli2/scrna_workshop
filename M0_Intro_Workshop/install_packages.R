@@ -1,7 +1,34 @@
 
 
-# Set current directory to the location of this file
-# In RStudio, Menu >> Session >> Set Workspace Directory >> To Source File Location
+# Package Installs for NCSU scRNA-Seq workshop
+#-------------------------------------------------------------------------------
+#Bruce Corliss
+
+
+
+# Instructions:
+#-------------------------------------------------------------------------------
+# 1. Install latest version of R
+# 2. Install latest version of R Studio
+# 3. Windows OS: install RTools
+# 4. Run this script by each code-chunk manually.
+
+
+# Install package maanager for bio-conductor
+install.packages("BiocManager")
+
+
+# Check that bioc manager is up-to date.
+# If it's not, then it will print out a command that you need to execute to
+# up-date packages.
+BiocManager::valid()
+
+# Print out what version of bioconductor manager you have, should by 3.18
+BiocManager::version()
+
+
+# Package installation
+#-------------------------------------------------------------------------------
 
 # Base Packages
 base_packages <- c("cli","tidyverse", "BiocManager", "cowplot", "here", "R.utils",
@@ -11,17 +38,23 @@ base_installs <- install.packages(setdiff(base_packages,
                                   dependencies = TRUE)
 # Load all base packages
 base_loads <- lapply(base_packages, library, character.only = TRUE)
+
+
+
+
+# Bioconductor Packages
+#-------------------------------------------------------------------------------
+
 # Bioconductor Packages
 biocm_packages <-  c("BiocParallel", "Seurat", "celldex", "scAnnotatR", 
                      "scRNAseq", "multtest", "SingleR", "DESeq2")
 bioc_installs <- setdiff(biocm_packages, rownames(installed.packages()))
 if (length(bioc_installs)) {BiocManager::install(bioc_installs) }
 # Load all Bioconductor packages
-# bioc_loads <- lapply(biocm_packages, library, character.only = TRUE)
+bioc_loads <- lapply(biocm_packages, library, character.only = TRUE)
 
 
-# Print out what version of bioconductor manager you have, should by 3.18
-BiocManager::version()
+
 # Biocmanager will check if any packages will need to be updates
 # If they do, it will print out a command to the console below that you can copy
 # and run the console
@@ -40,10 +73,11 @@ BiocManager::valid()
 # https://emilyriederer.github.io/projmgr/articles/github-pat.html
 
 
-# Seurat supporting packages
+# Seurat support packages
 #-------------------------------------------------------------------------------
 remotes::install_github("mojaveazure/seurat-disk")
 remotes::install_github("satijalab/seurat-wrappers")
+
 
 # Monocle 3 Developer Package and Dependencies
 #-------------------------------------------------------------------------------
@@ -65,8 +99,3 @@ devtools::install_github("immunogenomics/harmony")
 devtools::install_github("powellgenomicslab/scPred")
 
 
-# Set base directory of for workshop
-here::i_am("README.md")
-
-# Create data directory for workshop
-dir.create(here::here("_temp_data"))
