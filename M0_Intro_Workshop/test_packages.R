@@ -373,7 +373,7 @@ DoHeatmap(srat, features = topn$gene) +
 # DGE and Conserved Gene Expression ############################################
 #_______________________________________________________________________________
 # https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
-# We use the simulated integrated dataset we creat previously (randomly 
+# We use the simulated integrated dataset we created previously (randomly 
 # assigning cells between (0) control group and (1) treatment group).
 DefaultAssay(srat_int) <- "RNA"
 
@@ -500,14 +500,11 @@ celegans_path <- here::here("_temp_data", "celegans_embryo",
                             "count_matrix.Rdata")
 if (!file.exists(celegans_path)) {
   expression_matrix <- 
-    readRDS(url(paste0("https://depts.washington.edu:/trapnell-lab/software/",
-                       "monocle3/celegans/data/packer_embryo_expression.rds")))
+    readRDS(here::here("_temp_data", "celegans_embryo", "packer_embryo_expression.rds"))
   cell_metadata <- 
-    readRDS(url(paste0("https://depts.washington.edu:/trapnell-lab/software/",
-                       "monocle3/celegans/data/packer_embryo_colData.rds")))
+    readRDS(here::here("_temp_data", "celegans_embryo", "packer_embryo_colData.rds"))
   gene_annotation <- 
-    readRDS(url(paste0("https://depts.washington.edu:/trapnell-lab/software/",
-                       "monocle3/celegans/data/packer_embryo_rowData.rds")))
+    readRDS(here::here("_temp_data", "celegans_embryo", "packer_embryo_rowData.rds"))
   
   # Save expression data locally
   dir.create(here::here("_temp_data", "celegans_embryo"))
