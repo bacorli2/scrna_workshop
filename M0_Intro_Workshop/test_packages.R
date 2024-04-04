@@ -47,19 +47,15 @@ dir.create(here::here("_temp_data"))
 # Used from this tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial
 # 2,700 single cells that were sequenced on the Illumina NextSeq 500
 # 13,714 genes
-# Download dataset into temp_data, unzip
+# CHeck dataset exists, untar it
 pbmc3k_path <- here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz")
-if (!file.exists(pbmc3k_path)) {
-  dir.create(here::here("_temp_data"))
-  download.file(paste0("https://cf.10xgenomics.com/samples/cell/pbmc3k/",
-                       "pbmc3k_filtered_gene_bc_matrices.tar.gz"),
-                destfile = here::here("_temp_data", 
-                                      "pbmc3k_filtered_gene_bc_matrices.tar.gz"))
-  untar(pbmc3k_path, exdir = here::here("_temp_data"))
-}
+if (!file.exists(pbmc3k_path)) {stop(sprintf("PBMC Dataset Not exist in: %s", 
+                                             pbmc3k_path))}
+untar(pbmc3k_path, exdir = here::here("_temp_data"))
 # Load the srat dataset
 srat.data <- Read10X(data.dir = here::here("_temp_data", 
                                            "filtered_gene_bc_matrices/hg19"))
+
 
 # Initialize the Seurat object with the raw count matrix (non-normalized data).
 # min:cells: include genes that are found within at least 3 cells
