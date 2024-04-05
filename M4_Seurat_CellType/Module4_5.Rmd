@@ -1,0 +1,230 @@
+#-----------------------------
+# Note for workshop provided code: please be sure to check through all code before applying it to other projects!
+#-----------------------------
+# Processing and interpreting single cell RNA-seq data: A one day short-course
+# Module 4 & Module 5
+#------------------------------
+
+#------------------------------
+# Importing Data
+#------------------------------
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+First load the R libraries used in this Module and set your working directory
+
+```{r load_libraries_set_path}
+library(Seurat)
+library(ggplot2)
+library(celldex)
+library(SingleR)
+
+# Set wd to base of workshop repository
+here::i_am("README.md")
+
+```
+
+Load the R object generated from Module 3, part 2
+
+```{r load_data} 
+srat <- readRDS(here::here("M3_Seurat_Processing/workshop_module3_part2.rds"))
+```
+
+#------------------------------
+# UMAP : Metrics and Features
+#------------------------------
+# Notes: See the HBC tutorial for code relating to UMAP visualizations
+# https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
+# Additional visualizations in Seurat (including interactive plots!)
+# https://satijalab.org/seurat/articles/visualization_vignette
+#----------------------------------
+
+In the last module, we performed cell clustering. We would now like to identify the cluster cell types. However, first let's see if the clusters show variation for metrics that we have previously examined. 
+
+The FeaturePlot() function allows one to visualize feature levels for individual cells using a color gradient. FeaturePlot() uses normalized data for plotting gene expression. The min.cutoff parameter allows one to set a minimum threshold for a feature such that cells below this value are shown in gray, where q is the specified quantile. If set to true, the order parameter plots the cells in order of expression which can be useful if cells expressing a feature of interest are being hidden by non-expressing cells.  
+
+We previously used ScaleData() to regress out uninteresting sources of variation (percent.mt). One can again examine the nCount_RNA, nFeature_RNA, percent.mt and cell cycle phase markers using FeaturePlots(). One would not expect to see large differences in shading between cell clusters. If there are, then one may need to go back and regress out the variables. We only included mitochondrial percentage for vars.to.regress in ScaleData(), but Module3_part2 includes links to a few tutorials where other metrics were specified. 
+
+```{r UMAP_FeaturePlot} 
+
+# Check the default assay
+DefaultAssay(srat)
+
+# Revisit the integrated UMAP
+DimPlot(srat, label = TRUE)
+
+# Separate samples
+# How does these plots compare with the Day_5 and Day_10 cluster plots on Zebrahub?
+# Day 5: https://zebrahub.ds.czbiohub.org/cbg?name=cbg_5dpf
+# Day 10: https://zebrahub.ds.czbiohub.org/cbg?name=cbg_10dpf
+DimPlot(srat, label = TRUE, split.by = "orig.ident") + NoLegend()
+
+# Are there similar numbers of cells in each cluster for each sample?
+table(srat@meta.data$seurat_clusters, srat@meta.data$orig.ident)
+
+# QC metrics
+metrics_QC <- c("nCount_RNA", "nFeature_RNA", "percent.mt")
+FeaturePlot(srat, reduction = "umap", features = metrics_QC, pt.size = 0.2, order = TRUE, label = FALSE, min.cutoff = 'q10')
+
+# Cell cycle scores
+metrics_CC <- c("S.Score", "G2M.Score")
+FeaturePlot(srat, reduction = "umap", features = metrics_CC, pt.size = 0.2, order = TRUE, label = TRUE, min.cutoff = 'q10')
+
+# G2M.Score is higher in both samples for cluster #12
+VlnPlot(srat, features = "G2M.Score", pt.size = 0, split.by = "orig.ident")
+
+```
+
+#------------------------------
+# Cell Type Identification
+#------------------------------
+# Notes: Helpful tutorials for marker identification
+# https://hbctraining.github.io/scRNA-seq_online/lessons/09_merged_SC_marker_identification.html
+# https://satijalab.org/seurat/articles/pbmc3k_tutorial.html
+#----------------------------------
+
+Can we identify the cell types for the clusters? Already having an idea of the types of cells in a SC experiment is helpful as it gives one an idea of the marker genes for cell type identification. Ideally one would like each cluster to have a single cell type. When one has an idea of the cell types in their sample, then the FeaturePlot() function can be used to examine whether known markers for a single cell type are expressed within a single cluster. If not, the clusters may need to be iteratively refined by modifying previously set parameters such as the UMAP resolution, the number of PCs used in clustering, etc.
+
+Cell type annotation can be assigned through manual curation or using a reference. Assigning cell types manually can be quite time consuming and requires area specific knowledge. In reference based annotation, one can use available datasets for their organism of interest. The references can be generated from bulk RNA-seq data or from previously analyzed single cell data. Most of the available references are for human/mouse. When selecting a reference dataset, one wants to make sure that it is broad enough to cover all possible cell types in their dataset. 
+
+The FindMarkers() function will compare a specified cluster against a second cluster (or set of clusters). The Wilcoxon Rank Sum test is used to identify differentially expressed genes by default. In Seurat v5, the 'Presto' package is used to run this test faster. One can also increase the speed of FindMarkers() by specifying certain threshold parameters. For example, one can specify the log fold change threshold, where the default value is 0.1. Another parameter is min.pct, which limits the testing to those genes that are in a minimum fraction of cells in one of the populations. The default value for this parameter is 0.01. The resulting markers can also be limited to just those that have positive changes with the only.pos parameter. See ?FindMarkers for more information on available parameters, as well as correction methods and output column definitions.
+
+For these samples, we can view the previously assigned annotations in the meta.data column 'zebrafish_anatomy_ontology_class'
+
+```{r FindMarkers} 
+
+# Check the active assay
+srat@active.assay
+
+# Example 1: Look at four Fibroblast growth factor genes 
+# Labeled in Figure 21a of the Zebrahub article Supplemental Information (https://www.biorxiv.org/content/10.1101/2023.03.06.531398v2) 
+# Result --> Expressed across multiple clusters
+FGF_genes <-  c("fgf8a", "sall4", "etv4", "fgf3")
+FeaturePlot(srat, reduction = "umap", features = FGF_genes, pt.size = 0.2, order = TRUE, label = FALSE, min.cutoff = 'q10')
+
+#####################
+# Example 2: Cluster 17 (annotations assigned include nucleate, blood)
+# Find top 5 DE markers 
+# Here ident.2 is not specified, so all other cells are used
+# Output is a ranked list of potential markers
+cluster17.markers <- FindMarkers(srat, ident.1 = 17, only.pos = TRUE)
+head(cluster17.markers, n = 5)
+
+# Look at expression in clusters
+cluster17_marker1_5 <- rownames(cluster17.markers)[1:5]
+FeaturePlot(srat, reduction = "umap", features = cluster17_marker1_5, pt.size = 0.2, order = TRUE, label = FALSE, min.cutoff = 'q10')
+
+# Look at the top marker with a violin plot
+cluster17_marker1 <- rownames(cluster17.markers)[1]
+VlnPlot(srat, features = cluster17_marker1) + NoLegend()
+
+#####################
+# Example 3: Cluster 12 -- markers linked to the high G2M.Score seen in the UMAP plot?
+# Yes, the top gene is "top2a" which is highly expressed in the G2/M phases
+cluster12.markers <- FindMarkers(srat, ident.1 = 12, only.pos = TRUE)
+cluster12_marker1 <- rownames(cluster12.markers)[1]
+VlnPlot(srat, features = cluster12_marker1) + NoLegend()
+
+```
+
+Another visualization plot for gene expression is generated with the DotPlot() function
+
+```{r DotPlot} 
+
+# The data is scaled by default (?DotPlot)
+# Compare the FGF genes and the 5 top markers identified in Example #2
+markers <- list()
+markers[["FGF"]] <- FGF_genes
+markers[["Example2"]] <- cluster17_marker1_5
+
+DotPlot(srat, markers, assay="RNA") + RotatedAxis() + 
+  theme(axis.text.y = element_text(size=5))
+
+```
+
+#------------------------------
+# Subset clusters
+#------------------------------
+Cluster 0 has the largest number of cells and it has multiple cell types assigned to it in the annotation. Let's look for subclusters within cluster 0. We can use the FindSubCluster() function to identify subclusters within a specified cluster. Similarly, we could also remove a cluster that looks like a contaminate using subset. 
+
+```{r SubCluster} 
+
+# Check existing graphs
+Graphs(srat)
+names(srat@graphs)
+
+# Use FindSubCluster() function
+# resolution = 0.5 is the default
+# algorithm = 1 (original Louvain algorithm) is the default
+# Output includes a new column in meta.data (labeled here srat_subcluster)
+srat <- FindSubCluster(srat, graph.name = "RNA_snn", cluster = 0, resolution = 0.5, subcluster.name = "srat_subcluster", algorithm = 1)
+
+# Legend contains cluster 0 subclusters
+DimPlot(srat, reduction = "umap", group.by = "srat_subcluster", label = TRUE)
+
+# Subset for cluster 0 subclusters
+srat_subcluster_cluster0 <- subset(srat, srat_subcluster %in% c("0_0", "0_1", "0_2", "0_3"))
+DimPlot(srat_subcluster_cluster0, reduction = "umap", group.by = "srat_subcluster", label = TRUE)
+
+# The number of cells in each subsample for Day_5 and Day_10
+table(srat_subcluster_cluster0@meta.data$srat_subcluster, srat_subcluster_cluster0@meta.data$orig.ident)
+
+# If interested in working with this subset of data, one would need to rerun the workflow starting with the 
+# 'Find variable features' step ...... FindVariableFeatures()%>%ScaleData()%>%RunPCA()
+# Side note: to rerun the IntegrateLayers() function, the joined RNA assay will need to be split by sample
+# Seurat Essential Commands: https://satijalab.org/seurat/articles/seurat5_essential_commands
+
+```
+
+#---------------------------------------
+# Annotating cell types with a reference
+#---------------------------------------
+Here is a quick example of how one can use SingleR to assign cell type annotations. Here we will use the Seurat tutorial Peripheral Blood Mononuclear cells (PBMC) dataset and the reference will be the HumanPrimaryCellAtlasData.
+
+```{r SingleR} 
+
+# Use the Seurat tutorial example data (previously used in test_packages.R)
+pbmc3k_path <- here::here("_temp_data", "pbmc3k_filtered_gene_bc_matrices.tar.gz")
+
+if (!file.exists(pbmc3k_path)) {stop(sprintf("PBMC Dataset Not exist in: %s", 
+                                             pbmc3k_path))}
+untar(pbmc3k_path, exdir = here::here("_temp_data"))
+
+# Load the pbmc dataset
+pbmc.data <- Read10X(data.dir = here::here("_temp_data", "filtered_gene_bc_matrices/hg19"))
+
+# Process the Seurat object
+# Based on the Seurat tutorial (https://satijalab.org/seurat/articles/pbmc3k_tutorial.html)
+pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+pbmc <- ScaleData(pbmc)
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+DimPlot(pbmc, reduction = "umap")
+
+# Some available reference datasets: https://bioconductor.org/packages/devel/data/experiment/manuals/celldex/man/celldex.pdf
+reference_db <- HumanPrimaryCellAtlasData()
+
+# View reference label levels
+reference_db@colData
+
+# Select the level of the labels
+pred.pbmc <- SingleR(test = pbmc@assays$RNA$counts, ref = reference_db, labels = reference_db$label.main)
+
+# Cell type distribution
+table(pred.pbmc$pruned.labels)
+
+# Add the pruned labels to the meta.data
+pbmc@meta.data$single_r_cell_types <- pred.pbmc$pruned.labels
+
+# UMAP plot with annotations
+DimPlot(pbmc, reduction = "umap", label = TRUE, repel = TRUE, group.by = "single_r_cell_types")
+
+```
+
