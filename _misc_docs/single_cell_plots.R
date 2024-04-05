@@ -28,23 +28,23 @@ gg <- ggplot(data = cdata, aes(x=x, y= y, fill = Cell) ) +
   facet_grid(cols = vars(Cell)) +
   geom_bar(stat = "identity") + 
   theme_classic(base_size = 8) +
-  xlab("Gene") + ylab("Count") +
+  xlab("Gene ID") + ylab("Count") +
   coord_flip() +
   theme(legend.position = "none") + 
   scale_y_continuous(n.breaks = 3)
 gg
-save_plot(here::here("temp_out","cell_raw_count.png"), plot = gg, base_height = 2, base_width = 7)
+save_plot(here::here("_temp_out","cell_raw_count.png"), plot = gg, base_height = 2, base_width = 7)
 
 gg <- ggplot(data = cdata, aes(x=x, y= z, fill = Cell) ) +
   facet_grid(cols = vars(Cell)) +
   geom_bar(stat = "identity") + 
   theme_classic(base_size = 8) +
-  xlab("Gene") + ylab("Norm. Count") +
+  xlab("Gene ID") + ylab("Norm. Count") +
   coord_flip() +
   theme(legend.position = "none") + 
   scale_y_continuous(n.breaks = 3)
 gg
-save_plot(here::here("temp_out","cell_norm_count.png"), plot = gg, base_height = 2, base_width = 7)
+save_plot(here::here("_temp_out","cell_norm_count.png"), plot = gg, base_height = 2, base_width = 7)
 
 
 
@@ -66,20 +66,20 @@ gg <- ggplot(data = cdata, aes(x=x, y= y, fill = Cell) ) +
   facet_grid(cols = vars(Cell)) +
   geom_bar(stat = "identity") + 
   theme_classic(base_size = 8) +
-  xlab("Gene Expression") + ylab("Gene") +
+  ylab("Gene Expression") + xlab("Gene ID") +
   coord_flip() +
   theme(legend.position = "none") + 
   scale_y_continuous(n.breaks = 3)
 gg
-save_plot(here::here("temp_out","cell_raw_scale.png"), plot = gg, base_height = 2, base_width = 7)
+save_plot(here::here("_temp_out","cell_raw_scale.png"), plot = gg, base_height = 2, base_width = 7)
 
 gg <- ggplot(data = cdata, aes(x=x, y = z, fill = Cell) ) +
   facet_grid(cols = vars(Cell)) +
   geom_bar(stat = "identity") + 
   theme_classic(base_size = 8) +
-  xlab("Scaled. Gene Expression") + ylab("Gene") +
+  ylab("Scaled. Gene Expression") + xlab("Gene ID") +
   coord_flip() +
   theme(legend.position = "none") + 
   scale_y_continuous(n.breaks = 3)
 gg
-save_plot(here::here("temp_out","cell_scaled_scaled.png"), plot = gg, base_height = 2, base_width = 7)
+save_plot(here::here("_temp_out","cell_scaled_scaled.png"), plot = gg, base_height = 2, base_width = 7)
