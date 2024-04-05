@@ -11,6 +11,7 @@ here::i_am("README.md")
 
 # Normalization Data Example
 #-------------------------------------------------------------------------------
+set.seed(1)
 cdata <- 
   rbind(tibble(Cell = "Cell 1", x = 1:15, y = runif(15, min = 0, max = 30)),
         tibble(Cell = "Cell 2", x = 1:15, y = runif(15, min = 0, max = 30)),
@@ -27,7 +28,7 @@ gg <- ggplot(data = cdata, aes(x=x, y= y, fill = Cell) ) +
   facet_grid(cols = vars(Cell)) +
   geom_bar(stat = "identity") + 
   theme_classic(base_size = 8) +
-  xlab("Gene Count") + ylab("Gene") +
+  xlab("Gene") + ylab("Count") +
   coord_flip() +
   theme(legend.position = "none") + 
   scale_y_continuous(n.breaks = 3)
@@ -38,7 +39,7 @@ gg <- ggplot(data = cdata, aes(x=x, y= z, fill = Cell) ) +
   facet_grid(cols = vars(Cell)) +
   geom_bar(stat = "identity") + 
   theme_classic(base_size = 8) +
-  xlab("Norm. Gene Expression") + ylab("Gene") +
+  xlab("Gene") + ylab("Norm. Count") +
   coord_flip() +
   theme(legend.position = "none") + 
   scale_y_continuous(n.breaks = 3)
