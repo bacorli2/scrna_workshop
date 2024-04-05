@@ -1,0 +1,430 @@
+#-----------------------------
+# Note for workshop provided code: please be sure to check through all code before applying it to other projects!
+#-----------------------------
+# Processing and interpreting single cell RNA-seq data: A one day short-course
+# Module 3, Part 2
+#------------------------------
+# Note 2: This workflow is similar to that shown in the Seurat tutorial (https://satijalab.org/seurat/articles/pbmc3k_tutorial). 
+# There are alternate methods that can be used for parts of this pipeline. For example, see the SCTransform() function: 
+# https://satijalab.org/seurat/articles/sctransform_vignette.html
+#------------------------------
+
+We are going to continue to use data from Zebrahub (https://zebrahub.ds.czbiohub.org/) for Day 5 and Day 10 time points. However, we will use processed data that is available from the Zebrahub google drive (https://drive.google.com/drive/folders/1gB9u679gUqjX8P-pqjm6JtZL67eLoOGO).
+
+#------------------------------
+# Importing Data
+#------------------------------
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+First load the R libraries used in this Module and set your working directory
+
+```{r load_libraries_set_path}
+
+library(Seurat)
+library(biomaRt)
+library(RCurl)
+library(tidyverse)
+library(harmony)
+
+# Set wd to base of workshop repository
+here::i_am("README.md")
+
+```
+
+As in part 1, we will create a merged Seurat object for Day 5 and Day 10. This data has been downsampled to include 3000 cells. It will include annotation data which can be added to the object via the metadata.csv file.
+
+```{r load_data} 
+# Create merged Seurat object for Day 5 (replicate ID: TDR51) & Day 10 (replicate ID: TDR71)
+
+for (file in c("Day_5", "Day_10")){
+  srat.data <- Read10X(data.dir = here::here("_temp_data/H5AD/", file))
+  srat.obj <- CreateSeuratObject(counts = srat.data, project = file)
+  
+  meta.data <- read.csv(here::here("_temp_data/H5AD/", file, "metadata.csv"))
+  srat.obj <- AddMetaData(srat.obj, meta.data)
+  assign(file, srat.obj)
+  
+}
+
+# Generate a single Seurat object for Day 5 and Day 10
+# There are 32,060 genes and 3000 cells per time point
+
+srat <- merge(x = Day_5, 
+              y = Day_10, 
+              add.cell.id = c("Day_5", "Day_10")
+              )
+
+# Check the metadata
+head(srat@meta.data, 5)
+
+# There are 2 raw count matrices 
+Layers(srat[["RNA"]])
+
+```
+
+#------------------------------
+# Normalize data
+#------------------------------
+To make counts comparable across cells, one would like to normalize for sequencing depth as the cells will have different numbers of reads. Because the sequencing data in this project is generated using a 10X Single Cell 3' protocol, the normalization here does not need to account for gene length. As with most steps, there are different methods that can be used for normalization. Here we use a global-scale normalization method called LogNormalize and this is performed on a per-cell level. This includes the following steps:
+
+1) Normalize gene expression by the total expression in each cell
+2) Multiply by a scale factor (10,000 by default)
+3) Log-transform
+
+This is performed on the raw counts data (counts.Day_5, counts.Day_10) and the output will be available in the 'data' slot (ie srat[["RNA"]]$data)
+
+```{r normalize}
+srat <- NormalizeData(srat, normalization.method = "LogNormalize", scale.factor = 10000)
+
+# data.Day_5 and data.Day_10 now exist
+srat@assays
+Layers(srat[["RNA"]])
+
+```
+#----------------------------------
+# Cell Cycle
+#------------------------------
+# Notes: See the Seurat vignette on cell-cycle 
+# https://satijalab.org/seurat/articles/cell_cycle_vignette.html
+# HBC vignette on cell-cycle *
+# https://hbctraining.github.io/scRNA-seq_online/lessons/cell_cycle_scoring.html
+#----------------------------------
+One source of biological variation that we may not want to include is cell cycle variation (*see potential caveats). The CellCycleScoring() function can be used to assign S and G2/M scores to cells along with predicted classifications of a cell being in the G2M, S, or G1 phase. This step uses the normalized data.
+
+```{r CellCycleScoring}
+
+# Download cell cycle genes for Zebrafish
+# Danio_rerio.csv can also be found in the _temp_data directory
+cc.file <- getURL("https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Danio_rerio.csv") 
+cc.genes <- read.csv(text = cc.file)
+dim(cc.genes)
+
+# The geneID column contains Ensembl IDs; our dataset uses gene names
+head(cc.genes)
+
+# Obtain gene names for the cell cycle genes with biomart
+# The 2 steps that were used to generate the 'gene_annotation' data.frame
+# 1) drerio <- useEnsembl(biomart = "ensembl", dataset = "drerio_gene_ensembl", mirror = "useast")
+# 2) gene_annotation <- getBM(attributes = c("ensembl_gene_id", "external_gene_name"), filters = "ensembl_gene_id", values = cc.genes$geneID, mart = drerio) 
+
+gene_annotation <- readRDS(file = here::here("_temp_data/biomart_drerio_gene_ensembl.rds"))
+
+cc.genes_expanded <- merge(cc.genes, gene_annotation, by.x = "geneID", by.y = "ensembl_gene_id")
+
+# Obtain the S phase genes
+s.genes <- cc.genes_expanded$external_gene_name[cc.genes_expanded$phase == 'S']
+
+# Obtain the G2M phase genes
+g2m.genes <- cc.genes_expanded$external_gene_name[cc.genes_expanded$phase == 'G2/M']
+
+# What is the active assay?
+srat@active.assay
+
+# What is the active.ident?
+srat@active.ident
+
+# Join layers for CellCycleScoring()
+srat[["joined"]] <- JoinLayers(srat[["RNA"]])
+DefaultAssay(srat) <- "joined"
+srat <- CellCycleScoring(srat, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+
+# See the cell cycle scores and phase assignments in the meta.data
+head(srat[[]])
+
+# See the addition of the joined assay
+srat@assays
+
+# See the active assay
+srat@active.assay
+
+# What is the active.ident?
+srat@active.ident
+
+# Visualize two S phase cell cycle genes with a Ridge plot
+RidgePlot(srat, features = c("pcna", "mcm6"), ncol = 2)
+
+# Let's return to our previous settings
+DefaultAssay(srat) <- "RNA"
+srat <- SetIdent(srat, value = "orig.ident")
+
+```
+
+#----------------------------------
+# Find variable features
+#----------------------------------
+For some downstream analyses, one would like to use just the genes with the most variable expression (highly variable genes: HVGs). Genes with a high variance can be useful in identifying potential changes in expression in cell populations. To avoid selecting variable genes based only on their expression levels, one can generate standardized variances using a method like the variance stabilizing transformation (vst). In Seurat, the FindVariableFeatures() function can be used to identify the highly variable genes and the input is the raw counts data. The output will be a single gene list.
+
+First, let's look at the variable genes for one time point, Day_5. 
+
+```{r variable_features_Day5}
+
+# Default value for nfeatures = 2000
+# Default value for selection.method = "vst"
+Day_5 <- FindVariableFeatures(Day_5, selection.method = "vst", nfeatures = 2000)
+
+# 5 most highly variable genes
+Day_5_top5 <- head(VariableFeatures(Day_5), 5)
+
+# 2000 HVGs
+Day_5_HVG<- VariableFeatures(Day_5)
+length(Day_5_HVG)
+
+# Table with mean and variance values
+hvg_data <- HVFInfo(Day_5)
+
+# Extract values for just the 5 most highly variable genes
+hvg_data[rownames(hvg_data) %in% Day_5_top5,]
+
+# Plot variable features
+# x-axis: average gene expression across all cells
+# y-axis: standardized variance
+plot1 <- VariableFeaturePlot(Day_5)
+plot2 <- LabelPoints(plot = plot1, points = Day_5_top5, repel = TRUE)
+plot2
+
+```
+
+Next, we will identify the HVGs when using two time points, Day_5 and Day_10. With two layers, the function will find the variable features for each layer and identify those which are common in the two layers. Any remaining spots in the n features will include the most variable features in the layers (for features present in both). 
+
+```{r variable_features}
+
+# Find variable genes for Day_5 and Day_10
+srat <- FindVariableFeatures(srat, selection.method = "vst", nfeatures = 2000)
+
+# 2000 HVGs
+srat_HVG <- VariableFeatures(srat)
+length(srat_HVG)
+
+```
+
+#----------------------------------
+# Scale Data
+#----------------------------------
+We would like to use dimensional reduction techniques such as PCA. To avoid having the highly expressed genes dominate these analyses, the data will be scaled. In this step, the 2000 genes identified with FindVariableFeatures() are scaled and centered using the ScaleData() function. In the scaled data, the mean expression of each gene across the cells is 0 and the variance of each gene across the cells is 1. The input to ScaleData() is the normalized data and the resulting scaled data can be found in srat[["RNA"]]$scale.data.
+
+In addition, one can use ScaleData() to remove unwanted sources of variation, such as the mitochondrial RNA level, cell cycle etc. The specified variables are individually regressed against each gene and the residuals are scaled and centered. One should be careful when selecting which variables to regress out. For example, one would not regress out mitochondrial expression if it were biologically meaningful and could help in cell clustering. See links below for examples of regressing out different variables.
+
+https://hbctraining.github.io/scRNA-seq_online/lessons/06_SC_SCT_normalization.html
+https://ucdavis-bioinformatics-training.github.io/2021-March-Advanced-Topics-in-Single-Cell-RNA-Seq-VDJ/data_analysis/VDJ_Analysis_fixed
+https://learn.gencore.bio.nyu.edu/single-cell-rnaseq/seurat-part-3-data-normalization
+
+We will initially regress out just 'percent.mt'. We will use a PCA plot below to determine whether we will also regress out cell cycle.
+
+```{r scale}
+
+# We need to add the percent mt since this is not included in the metadata
+# The mitochondrial genes start with "mt-"
+head(srat[[]], 5)
+srat[["percent.mt"]] <- PercentageFeatureSet(srat, pattern = "^mt-")
+colnames(srat[[]])
+
+# Scale and regress out percent.mt
+srat <- ScaleData(srat, vars.to.regress = "percent.mt")
+
+# It can be seen that there is a scale.data layer
+Layers(srat[["RNA"]])
+dim(srat[["RNA"]]$scale.data)
+```
+
+#----------------------------------
+# Linear dimension reduction (PCA)
+#------------------------------
+# Note: A descriptive discussion on PCA
+# https://hbctraining.github.io/scRNA-seq_online/lessons/06_SC_SCT_normalization.html
+#----------------------------------
+PCA is performed using the scaled data for the 2000 HVGs. There are a number of plots that can be useful for visualizing the principal components. 
+
+```{r PCA}
+# By default this includes ncps = 50
+srat <- RunPCA(srat, features = VariableFeatures(object = srat))
+
+# Generate a PCA plot to look at the cell cycle phase
+# Based on this plot, we will not regress out phase
+DimPlot(srat, reduction = "pca", group.by= "Phase", split.by = "Phase")
+
+# Generate PCA plot (using active.ident)
+DimPlot(srat, reduction = "pca")
+```
+
+After RunPCA(), one can investigate the contributions to the principal components in the srat@reductions slot (https://satijalab.org/seurat/archive/v3.0/dim_reduction_vignette)
+
+```{r object_PCA}
+
+slotNames(srat)
+
+# Obtain PCA information from the reductions slot
+srat@reductions
+srat[["pca"]]
+
+# Cell coordinates in low-dimensional space
+# Includes both Day_5 and Day_10 (6000 cells)
+head(Embeddings(srat, reduction = "pca")[, 1:5])
+dim(Embeddings(srat, reduction = "pca"))
+
+# Gene loadings for the first 5 PCs
+# Includes information for the 2000 HVGs
+head(Loadings(srat, reduction = "pca")[, 1:5])
+dim(Loadings(srat, reduction = "pca"))
+
+```
+
+The genes with the highest loadings for each principal component can be depicted with the VizDimLoadings() function. By default, the top genes are ranked by the absolute values of the scores (see ?VizDimLoadings).
+
+```{r PCA_loadings}
+
+# Print out the top 5 genes with + / - scores for PC1 and PC2
+print(srat[["pca"]], dims = 1:2, nfeatures = 5)
+
+# PC1 and PC2 loadings for the top 10 genes (by default nfeatures = 30; balanced = FALSE)
+VizDimLoadings(srat, dims = 1:2, reduction = "pca", nfeatures = 10)
+
+# Get a list of the top loadings for PC1
+TopFeatures(srat, dim = 1, nfeatures = 10, projected = FALSE, balanced = FALSE)
+
+```
+
+One would like to know how many PCs to keep for downstream steps and as we will see in the cell clustering step, the number of PCs that are selected can be quite important. Elbow plots display the PC number on the x-axis and the standard deviations on the y-axis which can be used to evaluate the variance contributions. One may not necessarily need to retain PCs that capture little of the variability. Hence identifying where the "elbow" is can be useful in identifying the number of PCs to keep for further analyses. 
+
+Here is a post that takes a more quantitative look at selecting the cutoff: https://github.com/hbctraining/scRNA-seq/blob/master/lessons/elbow_plot_metric.md
+
+```{r ElbowPlot}
+# Default for ndims is 20
+ElbowPlot(srat, ndims = 40)
+
+# Standard deviations for the first 5 PCs
+head(Stdev(srat, reduction = "pca"), n=5)
+
+```
+
+Heatmaps generated with the DimHeatmap() function can be useful in visualizing heterogeneity in the principal components and also helpful in identifying how many PCs should be saved for downstream analysis. The plots are based on PCA weightings and the cells and genes are sorted by their principal component scores. The genes with the most negative scores are on the top and the most positive scores on the bottom. 
+
+```{r heatmaps}
+# By default, balanced = TRUE (see ?DimHeatmap)
+# By default, nfeatures = 30 genes
+# Default color scheme: positive correlations (purple), negative correlations (yellow), no correlations (black)
+
+# PC1 - PC6
+DimHeatmap(srat, dims = 1:6, cells = 500)
+# PC7 - PC12
+DimHeatmap(srat, dims = 7:12, cells = 500)
+# PC24 - PC30
+DimHeatmap(srat, dims = 24:30, cells = 500)
+```
+
+For this data, we can see that by the third set of plots (PC24 - PC30), there is not much structure in the plots compared to the first two sets. Based on this and the Elbow plot, we will use the first 30 PCs for cell clustering.
+
+#----------------------------------
+# Cell Clustering
+#----------------------------------
+# Note: Helpful tutorials for cell clustering
+# Seurat - Guided Clustering tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial.html
+# HBC Single-cell RNA-seq clustering analysis: https://github.com/hbctraining/scRNA-seq/blob/master/lessons/07_SC_clustering_cells_SCT.md
+# UC Davis Bioinformatics Core: https://ucdavis-bioinformatics-training.github.io/2020-August-intro-scRNAseq/data_analysis/scRNA_Workshop-PART5_fixed
+#----------------------------------
+Because of the technical noise for individual genes in single cell datasets, Seurat uses PCA scores for cell clustering where each PC represents a 'metagene' with information across a correlated gene set.    
+
+A graph-based clustering approach is used in Seurat. The default method used to identify the nearest neighbors in the FindNeighbors() function is 'Annoy' (?FindNeighbors, https://github.com/spotify/annoy) and one sets the number of dimensions of reduction to use with the dims parameter. This can be set to the number of PCs identified in the previous step which here is the first 30.
+
+The FindClusters() function has a resolution parameter that can set the clustering granularity. The number of clusters increases as the resolution value increases. The number of clusters that are generated is dataset specific and one can explore how changing the resolution parameter impacts the resulting number of clusters. Each cell is assigned to a cluster and these identities can be seen in the meta.data. If more than one resolution is examined, a new column will be added to the meta.data for each one. 
+
+The Seurat tutorial mentions that a resolution of 0.4 - 1.2 typically results in good results for datasets with ~3k cells.
+
+```{r cell_clustering}
+# Setting dims to the selected PCs from previous step
+srat <- FindNeighbors(srat, dims = 1:30, reduction = "pca")
+
+# Look at resolutions from 0.4 to 1.2, increment by 0.4
+# The last set of cluster identities is stored in 'seurat_clusters'
+# These cluster identities match the srat@active.ident
+srat <- FindClusters(srat, resolution = seq(0.4, 1.2, 0.4))
+
+# Explore resolutions (columns start with "RNA_snn_res')
+# The 'seurat_clusters' column is equal to that of RNA_snn_res.1.2
+srat@meta.data %>% 
+        View()
+
+# Compare the number of clusters for the three resolutions
+sapply(grep("RNA_snn_res", colnames(srat@meta.data), value = TRUE),
+       function(x) length(unique(srat@meta.data[,x])))
+
+```
+
+The dimensionality reduction technique that we will use to visualize the cell clusters is UMAP. The input to RunUMAP() includes the number of PCA dimensions and we will use the same number that was used for the cell clustering. One can examine how the clusters change with the resolution parameter in DimPlot(). The cluster number labels that are displayed on the plots are assigned based on the number of cells in the clusters. The cluster with the largest number of cells is labeled 0.
+
+```{r UMAP}
+
+# Perform UMAP clustering
+srat <- RunUMAP(srat, dims = 1:30, reduction = "pca", reduction.name = "layers_not_integrated")
+
+# Visualize UMAP clusters for a resolution of 1.2
+DimPlot(srat, reduction = "layers_not_integrated", label = TRUE, repel = TRUE)
+
+# Check the number of cells in each cluster for a resolution of 1.2
+cluster_cellnum <- table(srat@active.ident)
+cluster_cellnum
+
+# Use a resolution of 0.4 for cluster identities
+Idents(object = srat) <- "RNA_snn_res.0.4"
+
+# Visualize UMAP clusters for a resolution of 0.4
+DimPlot(srat, reduction = "layers_not_integrated", label = TRUE, repel = TRUE)
+
+```
+
+#----------------------------------
+# Integration & Cell Clustering
+#----------------------------------
+# Helpful tutorials for integration
+# Seurat - Integrative analysis in Seurat 5: https://satijalab.org/seurat/articles/seurat5_integration
+# Seurat - Introduction to scRNA-seq integration: https://satijalab.org/seurat/articles/integration_introduction.html
+# HBC Single-cell RNA-seq clustering analysis: https://github.com/hbctraining/scRNA-seq/blob/master/lessons/06_SC_SCT_and_integration.md
+#---------------------------------
+Should we perform integration for this dataset? One can look at the UMAP plot to examine whether the cells are clustering separately based on condition (here time point). 
+
+```{r integration_check}
+
+# Visualize UMAP clusters based on time point and cell type
+# The 'seurat_clusters' column is equal to that of RNA_snn_res.1.2
+DimPlot(srat, reduction = "layers_not_integrated", group.by = c("orig.ident", "seurat_clusters"))
+```
+
+As can be seen, the clusters are at least partially defined by time point, so performing integration here could help for downstream analyses. Integration can be used to try to match cell types and biological states across datasets and there are vignettes listed above that show examples of how to include integration with dimensional reduction. There are different integration methods and the code below will use 'Harmony' (https://github.com/immunogenomics/harmony) in the IntegrateLayers() function. One can explore how the UMAP visualizations vary with different integration methods (see the 'seurat5_integration' vignette). 
+
+```{r integration_UMAP}
+
+# Integrate using Harmony
+srat <- IntegrateLayers(object = srat, method = HarmonyIntegration, orig.reduction = "pca", new.reduction = "integrated.harmony", verbose = FALSE)
+
+srat <- FindNeighbors(srat, reduction = "integrated.harmony", dims = 1:30)
+
+# After this step, 'seurat_clusters' is equal to 'harmony_clusters' in meta.data
+# These cluster identities match the srat@active.ident
+srat <- FindClusters(srat, resolution = 0.8, cluster.name = "harmony_clusters")
+head(srat[[]])
+
+srat <- RunUMAP(srat, reduction = "integrated.harmony", dims = 1:30, reduction.name = "umap")
+
+# Visualize UMAP clusters based on time point and cell type
+DimPlot(srat, reduction = "umap", group.by = c("orig.ident", "harmony_clusters"))
+
+# Check the number of cells in each cluster
+cluster_cellnum <- table(srat@active.ident)
+cluster_cellnum
+
+# Names of assays, dimensional reductions, and graphs
+names(srat)
+
+# Finally let's join the layers for downstream analyses
+srat[["RNA"]] <- JoinLayers(srat[["RNA"]])
+srat[["RNA"]]
+
+```
+
+#------------------------------
+# Save object (output file is ~200 Mb)
+#----------------- -------------
+```{r save_object}
+saveRDS(srat, file="workshop_module3_part2.rds")
+```
