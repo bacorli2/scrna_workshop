@@ -1,5 +1,12 @@
 
-
 pbmc3k_filtered_gene_bc_matrices.tar.gz
 PBMC3K Dataset from 10X Genomics
 https://cf.10xgenomics.com/samples/cell-exp/1.1.0/pbmc3k/pbmc3k_web_summary.html
+
+Zebrahub data
+In the Cell_Ranger directory, there is data for two samples, Day 5 (replicate TDR51) and Day 10 (replicate TDR71). The raw reads were downloaded from SRA and were processed with Cell Ranger. The output data in the filtered_feature_bc_matrix was subsampled to keep only 3000 cells for each sample. 
+
+In the H5AD directory, there is data for the same two replicates. However, the processed h5ad files were used instead of the raw reads as in the Cell_Ranger directory. The h5ad files were downloaded from the Zebrahub Google Drive and then subsampled to keep only 3000 cells for each sample. 
+
+The Zebrahub Google Drive can be found here:
+https://drive.google.com/drive/folders/1gB9u679gUqjX8P-pqjm6JtZL67eLoOGO
