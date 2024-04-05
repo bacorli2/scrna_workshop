@@ -10,3 +10,10 @@ In the H5AD directory, there is data for the same two replicates. However, the p
 
 The Zebrahub Google Drive can be found here:
 https://drive.google.com/drive/folders/1gB9u679gUqjX8P-pqjm6JtZL67eLoOGO
+
+
+celegans_empbryo
+This dataset is used for the tutorial for monocle. We use it for a couple of slides.
+Species: C. elegans
+Source: https://www.biorxiv.org/content/10.1101/565549v2
+JONATHAN S. PACKER et al. A lineage-resolved molecular atlas of C. elegans embryogenesis at single-cell resolution. SCIENCE, 5 Sep 2019, Vol 365, Issue 6459
