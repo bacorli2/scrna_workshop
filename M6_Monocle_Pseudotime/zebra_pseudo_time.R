@@ -29,11 +29,11 @@ data_paths = c("Day_5", "Day_10")
 srat_list = list()
 for (n in 1:2) {
   # Load count, cell, and gene data files
-  data_10x <- Read10X(data.dir = here::here("_temp_data", "HDA5", data_paths[[n]]))
+  data_10x <- Read10X(data.dir = here::here("_temp_data", "H5AD", data_paths[[n]]))
   srat_list[[n]] <- CreateSeuratObject(counts = data_10x, project = "zebra", 
                                       min.cells = 3, min.features = 200)
   # Add additional cell type labels
-  meta.data <- read.csv(here::here("_temp_data/HDA5/", data_paths[[n]], "metadata.csv"))
+  meta.data <- read.csv(here::here("_temp_data", "H5AD", data_paths[[n]], "metadata.csv"))
   srat_list[[n]] <- AddMetaData(srat_list[[n]], meta.data)
   
 }
@@ -142,13 +142,24 @@ plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE,
            graph_label_size = 1.5, alpha = 0.5)
 
 
+# Plot this and choose points for the next part ################################
+#_______________________________________________________________________________
+plot_cells(cds, color_cells_by = "cluster", label_cell_groups = FALSE,
+           label_leaves = TRUE, label_principal_points = TRUE, 
+           graph_label_size = 3, alpha = 0.5)
+# Find an interesting branch node and end node you want to subset, 
+# and replace these two arguments in the next step.
+# starting_pr_node
+# ending_pr_nodes
+
+
 # Choose Specific Trajectory ###################################################
 #_______________________________________________________________________________
 
 # 6) Subset cells from a particular trajectory (graph segment)
 cds_sub <- choose_graph_segments(cds, reduction_method = "UMAP",
-                                 starting_pr_node = "Y_411", 
-                                 ending_pr_nodes = c("Y_364"),
+                                 starting_pr_node = "Y_231", 
+                                 ending_pr_nodes = c("Y_281"),
                                  clear_cds = FALSE) 
 
 
