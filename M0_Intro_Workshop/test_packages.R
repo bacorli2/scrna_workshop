@@ -70,6 +70,7 @@ srat[["percent.mt"]] <- PercentageFeatureSet(srat, pattern = "^MT-")
 # nFeature_RNA: total number of genes detected in each cell
 # nCount_RNA: total number of molecules detected within a cell (library size)
 # percent.mt: fraction of genes that are mitochondrial (qc metric)
+VlnPlot(srat, features = "percent.mt", ncol = 3)
 VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
         ncol = 3)
 
@@ -153,6 +154,38 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 # FeaturePlot(data, features = c("Pax6",  "Eomes", "Aldh1l1",
 #                                "Tbr1",  "Olig2", "Sox2", "Cux2", "Neurog2"))
 
+# Save srat file (subsetted) to explore object structure
+# small_srat <- srat[1:10000,1:200]
+# save(small_srat, file = here::here("_temp_data","srat_example_object.RData"))
+
+# # Parameter sweep
+# res <- seq(0.1,2,.2)
+# res <- c(0.01, 0.1, 0.2, 0.4, 0.8, 1, 1.5, 2, 5, 10)
+# for (n in seq_along(res)){
+#   srat <- FindClusters(srat, resolution = res[n])
+#   # Perform UMAP clustering
+#   srat <- RunUMAP(srat, dims= 1:10)
+#   gg <- DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE) + 
+#     theme(legend.position = "none") + ggtitle(sprintf("Res = %.2f", res[n]))
+#   cowplot::save_plot(here::here("_temp_out", sprintf("umap_res-%.1f.png", res[n])),
+#                      gg,  base_height = 3, base_width = 3)
+# 
+# }
+
+
+# # Parameter sweep
+# pdims <- c(2,3,4, 5,10,15,20,50)
+# for (n in seq_along(pdims)){
+#   srat <- FindNeighbors(srat, dims = 1:pdims[n])
+#   srat <- FindClusters(srat, resolution = 0.5)
+#   # Perform UMAP clustering
+#   srat <- RunUMAP(srat, dims= 1:pdims[n])
+#   gg <- DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE) + 
+#     theme(legend.position = "none") + ggtitle(sprintf("Dims = %.0f", pdims[n]))
+#   cowplot::save_plot(here::here("_temp_out", sprintf("umap_dims-%.0f.png", pdims[n])),
+#                      gg,  base_height = 3, base_width = 3)
+#   
+# }
 
 
 # Dataset Integration (Simulated) ##############################################
