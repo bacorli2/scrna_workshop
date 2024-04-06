@@ -463,28 +463,29 @@ DotPlot(srat, features = rev(rownames(diff_markers$`Classical Monocytes`)[1:10])
   RotatedAxis()
 
 
+
 ## Option 2: Visualize Differential Expressed Genes ############################
 #_______________________________________________________________________________
 # celltypes <- levels(Idents(srat))
 # for (n in seq_along(celltypes)) {
 #   sub_srat <- subset(srat, idents = celltypes[n])
 #   Idents(sub_srat) <- "stim"
-#   avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
+#   avg.t.cells <- log1p(AverageExpression(sub_srat, verbose = FALSE)$RNA)
 #   avg.t.cells$gene <- rownames(avg.t.cells)
 # 
 # }
-# 
-# # Heatmap of gene expression between study groups across all cell types 
-# FeaturePlot(srat, features = c("LYZ", "ISG15"), 
-#             split.by = "group_id", max.cutoff = 3, 
-#             cols = c("grey", "red"))
-# 
-# 
-# # Visualize expression between study groups across all cell types
-# plots <- VlnPlot(srat, features = c("LYZ", "ISG15"), split.by = "group_id", 
-#                  group.by = "cell_type", pt.size = 0, combine = FALSE, 
-#                  split.plot = FALSE)
-# wrap_plots(plots = plots, ncol = 1)
+
+# Heatmap of gene expression between study groups across all cell types
+FeaturePlot(srat, features = c("LYZ", "ISG15"),
+            split.by = "group_id", max.cutoff = 3,
+            cols = c("grey", "red"))
+
+
+# Visualize expression between study groups across all cell types
+plots <- VlnPlot(srat, features = c("LYZ", "ISG15"), split.by = "group_id",
+                 group.by = "cell_type", pt.size = 0, combine = FALSE,
+                 split.plot = FALSE)
+wrap_plots(plots = plots, ncol = 1)
 
 
 
@@ -506,14 +507,13 @@ pseudo_srat <- AggregateExpression(
 pseudo_srat$celltype.tx <- paste(pseudo_srat$cell_type, 
                                  pseudo_srat$group_id, sep = "_")
 
-# Set primrary identify/groups for cells for DGE test
+# Set primary identify/groups for cells for DGE test
 Idents(pseudo_srat) <- "celltype.tx"
 bulk.mono.de <- FindMarkers(object = pseudo_srat, 
                             ident.1 = "Classical Monocytes_Ctrl", 
                             ident.2 = "Classical Monocytes_Tx",
                             test.use = "DESeq2")
 head(bulk.mono.de, n = 10)
-
 
 ### Visualize differentially expressed markers from pseudobulk analysis ########
 #_______________________________________________________________________________
